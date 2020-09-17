@@ -62,6 +62,6 @@ file(GLOB_RECURSE TEST_HEADERS test/*.h)
 add_executable(tests
         ${TEST_SOURCES}
         ${TEST_HEADERS}
-        )
+)
 target_link_libraries(tests gtest_main)
 add_test(NAME example_test COMMAND tests)
