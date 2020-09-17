@@ -10,10 +10,36 @@ namespace masstree {
 
 typedef uint64_t KeySlice;
 
+struct SliceWithSize{
+  KeySlice slice;
+  uint8_t size;
+
+  SliceWithSize(KeySlice slice_, uint8_t size_)
+  : slice(slice_)
+  , size(size_)
+  {
+    assert(1 <= size and size <= 8);
+  }
+
+  bool operator==(const SliceWithSize &rhs) const{
+    return slice == rhs.slice and size == rhs.size;
+  }
+
+  bool operator!=(const SliceWithSize &rhs) const{
+    return !(*this == rhs);
+  }
+};
+
+/**
+ * Keyを表す。
+ * 状態をもち、Iteratorとしての機能も持たせる。
+ */
 struct Key {
   std::vector<KeySlice> slices;
   size_t length;
   size_t cursor = 0;
+
+  Key(Key&& other) = default;
 
   Key(std::vector<KeySlice> slices_, size_t len)
     : slices(std::move(slices_)), length(len) {}
@@ -26,6 +52,14 @@ struct Key {
     return true;
   }
 
+  size_t lastSliceSize() const{
+    if(length % 8 == 0){
+      return 8;
+    }else{
+      return length % 8;
+    }
+  }
+
   [[nodiscard]]
   size_t getCurrentSliceSize() const {
     if (hasNext()) {
@@ -35,8 +69,8 @@ struct Key {
     }
   }
 
-  std::pair<KeySlice, size_t> getCurrentSlice(){
-    return std::pair(slices[cursor], getCurrentSliceSize());
+  SliceWithSize getCurrentSlice() const{
+    return SliceWithSize(slices[cursor], getCurrentSliceSize());
   }
 
   void next(){
@@ -45,10 +79,9 @@ struct Key {
   }
 
   bool operator==(const Key &rhs) const{
-    if(length != rhs.length){
-      return false;
-    }
-    return slices == rhs.slices;
+    return length == rhs.length
+    && cursor == rhs.cursor
+    && slices == rhs.slices;
   }
 
   bool operator!=(const Key& rhs) const{
