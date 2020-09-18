@@ -5,6 +5,8 @@
 
 namespace masstree{
 
+Node *insert(Node *root, Key &key, void* value);
+
 Node *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
   root->version.is_root = true;
@@ -32,13 +34,98 @@ Node *start_new_tree(const Key &key, void *value){
   return root;
 }
 
+std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key){
+  if(key.hasNext()){
+    auto cursor = key.getCurrentSlice();
+    for(size_t i = 0; i < borderNode->numberOfKeys(); ++i){
+      if(borderNode->key_len[i] >= BorderNode::key_ken_has_suffix
+        && borderNode->key_slice[i] == cursor.slice
+      ){
+        return i;
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+bool check_break_invariant(const Key &key, const BigSuffix* bigSuffix){
+  if(key.hasNext() and bigSuffix->hasNext()){
+    auto key_cursor = key.getCurrentSlice();
+    auto suffix_cursor = bigSuffix->getCurrentSlice();
+    if(key_cursor.slice == suffix_cursor.slice){
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Corresponds to insert_into_leaf in B+tree.
+ * 前提: borderに空きがある。
  * @param border
  * @param key
  * @param value
  */
-void insert_into_border(BorderNode *border, const Key &key, void *value){
+void insert_into_border(BorderNode *border, Key &key, void *value){
+  // 簡単のため、先にnew layerを作る場合の処理について扱います
+  auto check = check_break_invariant(border, key);
+  if(check){
+    auto index = check.value();
+    if(border->key_len[index] == BorderNode::key_ken_has_suffix){
+      auto old_val = border->lv[index].value;
+      auto old_key_suffix_copy = new BigSuffix(*border->key_suffixes.get(index));
+      BorderNode *old_layer;
+      BorderNode *first_new_layer;
+      bool first = false;
+    next_layer:
+      auto new_layer = new BorderNode;
+
+      if(!first){
+        first_new_layer = new_layer;
+        first = true;
+      }else{
+        old_layer->lv[0].next_layer = new_layer;
+      }
+
+      new_layer->version.is_root = true;
+
+      key.next();
+      // 新しいlayerに移動
+      // ここでもinvariateするかどうかで変わる
+      if(check_break_invariant(key, old_key_suffix_copy)){
+        new_layer->key_len[0] = BorderNode::key_len_layer;
+        new_layer->key_slice[0] = old_key_suffix_copy->getCurrentSlice().slice;
+        old_layer = new_layer;
+        goto next_layer;
+      }else{
+        // 2つのkeyをそれぞれinsertする
+        // newの方は、普通にinsert_into_borderを呼び出す
+        // oldの方は、suffixか、sliceに入る事に
+        insert_into_border(new_layer, key, value);
+        if(old_key_suffix_copy->hasNext()){
+          new_layer->key_slice[1] = old_key_suffix_copy->getCurrentSlice().slice;
+          new_layer->key_len[1] = BorderNode::key_ken_has_suffix;
+          old_key_suffix_copy->next();
+          new_layer->key_suffixes.set(1, old_key_suffix_copy);
+          new_layer->lv[1].value = old_val;
+        }else{
+          new_layer->key_slice[1] = old_key_suffix_copy->getCurrentSlice().slice;
+          new_layer->key_len[1] = old_key_suffix_copy->getCurrentSlice().size;
+          new_layer->lv[1].value = old_val;
+          delete old_key_suffix_copy;
+        }
+      }
+      border->key_len[index] = BorderNode::key_len_layer;
+      delete border->key_suffixes.get(index);
+      border->lv[index].next_layer = first_new_layer;
+    }else{
+      assert(border->key_len[index] == BorderNode::key_len_layer);
+      key.next();
+      insert(border->lv[index].next_layer, key, value);
+    }
+    return;
+  }
+
   size_t insertion_point = 0;
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
@@ -337,7 +424,6 @@ ascend:
  * rootが更新される場合があるので、rootへのポインタを返す
  */
 Node *insert(Node *root, Key &key, void* value){
-
   /**
     * Case 1: Treeのrootが空の場合
     */

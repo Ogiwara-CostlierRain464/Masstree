@@ -82,6 +82,7 @@ struct BigSuffix{
   size_t lastSliceSize = 0;
 
   BigSuffix() = default;
+  BigSuffix(const BigSuffix& other) = default;
 
   BigSuffix(std::vector<KeySlice> &&slices_, size_t lastSliceSize_)
   : slices(std::move(slices_))
@@ -155,6 +156,10 @@ struct KeySuffix{
 
   BigSuffix* get(size_t i){
     return suffixes[i];
+  }
+
+  void delete_ptr(size_t i){
+
   }
 
   /**
@@ -375,13 +380,13 @@ InteriorNode *lockedParent(Node *n){
 }
 
 std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
-  retry:
+retry:
   auto n = root; auto v = stableVersion(n);
 
   if(!v.is_root){
     root = root->parent; goto retry;
   }
-  descend:
+descend:
   if(n->version.is_border){
     return std::pair(reinterpret_cast<BorderNode *>(n), v);
   }
