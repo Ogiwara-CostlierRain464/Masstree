@@ -223,6 +223,13 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
   n1->parent = n->parent;
 }
 
+/**
+ * Corresponds to insert_into_new_root in B+tree.
+ * @param left
+ * @param slice
+ * @param right
+ * @return
+ */
 InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
   auto root = new InteriorNode;
   root->version.is_root = true;
@@ -235,21 +242,20 @@ InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right)
   return root;
 }
 
-void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice){
-  size_t insertion_index = 0;
-
-  while(insertion_index < p->n_keys
-  && p->key_slice[insertion_index] < slice){
-    ++insertion_index;
-  }
-
+/**
+ * Corresponds to insert_into_node in B+tree.
+ * @param p
+ * @param n1
+ * @param slice
+ */
+void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
   // move to right
-  for(size_t i = p->n_keys; i > insertion_index; --i){
+  for(size_t i = p->n_keys; i > n_index; --i){
     p->child[i + 1] = p->child[i];
     p->key_slice[i] = p->key_slice[i - 1];
   }
-  p->child[insertion_index + 1] = n1;
-  p->key_slice[insertion_index] = slice;
+  p->child[n_index + 1] = n1;
+  p->key_slice[n_index] = slice;
   ++p->n_keys;
 }
 
@@ -260,6 +266,16 @@ size_t get_n_index(InteriorNode *parent, Node* n){
     ++n_index;
   }
   return n_index;
+}
+
+KeySlice getMostLeftSlice(Node *n){
+  if(n->version.is_border){
+    auto border = reinterpret_cast<BorderNode*>(n);
+    return border->key_slice[0];
+  }else{
+    auto interior = reinterpret_cast<InteriorNode*>(n);
+    return interior->key_slice[0];
+  }
 }
 
 /**
@@ -283,15 +299,17 @@ Node *split(Node *n, const Key &k, void *value){
     reinterpret_cast<BorderNode *>(n1), k, value);
 ascend:
   InteriorNode *p = lockedParent(n);
+  auto mostLeft = getMostLeftSlice(n1);
   if(p == nullptr){
-    p = create_root_with_children(n, cursor.slice, n1);
+    p = create_root_with_children(n, mostLeft, n1);
     unlock(n);
     std::atomic_thread_fence(std::memory_order_acq_rel);
     unlock(n1);
     return p;
   }else if(p->isNotFull()){
     p->version.inserting = true;
-    insert_into_parent(p, n1, cursor.slice);
+    size_t n_index = get_n_index(p, n);
+    insert_into_parent(p, n1, mostLeft ,n_index);
     unlock(n);
     std::atomic_thread_fence(std::memory_order_acq_rel);
     unlock(n1);
@@ -308,7 +326,7 @@ ascend:
     p1->version = p->version;
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),
-      reinterpret_cast<InteriorNode *>(p1), cursor.slice, n1, n_index);
+      reinterpret_cast<InteriorNode *>(p1), mostLeft, n1, n_index);
     unlock(n1); n = p; n1 = p1; goto ascend;
   }
 }

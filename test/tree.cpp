@@ -2,6 +2,7 @@
 #include "../include/key.h"
 #include "../include/tree.h"
 #include "sample.h"
+#include "../include/bptree.h"
 
 using namespace masstree;
 
@@ -112,3 +113,53 @@ TEST(MasstreeTest, get4){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 23);
 }
 
+TEST(MasstreeTest, start_new_tree){
+  Key key({
+    0x0102030405060708,
+    0x0102030405060708,
+    0x0102030405060708,
+    0x1718190000000000
+  }, 27);
+  auto root = start_new_tree(key, new int(100));
+  auto p = get(root, key);
+  assert(p != nullptr);
+  EXPECT_EQ(*reinterpret_cast<int *>(p), 100);
+}
+
+TEST(MasstreeTest, insert){
+  Key key1({
+    0x0102030405060708,
+    0x0A0B000000000000
+  }, 10);
+  Key key2({
+    0x1112131415161718
+  }, 8);
+  auto root = insert(nullptr, key1, new int(1));
+  root = insert(root, key2, new int(2));
+  auto p = get(root, key1);
+  assert(p != nullptr);
+  EXPECT_EQ(*reinterpret_cast<int *>(p), 1);
+}
+
+BorderNode *to_b(Node *n){
+  return reinterpret_cast<BorderNode *>(n);
+}
+
+InteriorNode *to_i(Node *n){
+  return reinterpret_cast<InteriorNode *>(n);
+}
+
+TEST(MasstreeTest, split){
+  Node *root = nullptr;
+  for(uint64_t i = 1; i <= 24; ++i){
+    Key k({i}, 1);
+    root = insert(root, k, new int(i));
+  }
+
+  print_sub_tree(root);
+
+  Key k17({17},1);
+  auto p = get(root, k17);
+  assert(p != nullptr);
+  EXPECT_EQ(*reinterpret_cast<int *>(p),17);
+}
