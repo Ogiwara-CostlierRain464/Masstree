@@ -151,15 +151,16 @@ InteriorNode *to_i(Node *n){
 
 TEST(MasstreeTest, split){
   Node *root = nullptr;
-  for(uint64_t i = 1; i <= 24; ++i){
+  for(uint64_t i = 1; i <= 10000; ++i){
     Key k({i}, 1);
     root = insert(root, k, new int(i));
   }
 
   print_sub_tree(root);
 
-  Key k17({17},1);
-  auto p = get(root, k17);
+  Key k2341({2341},1);
+  auto l = findBorder(root, k2341);
+  auto p = get(root, k2341);
   assert(p != nullptr);
-  EXPECT_EQ(*reinterpret_cast<int *>(p),17);
+  EXPECT_EQ(*reinterpret_cast<int *>(p),2341);
 }
