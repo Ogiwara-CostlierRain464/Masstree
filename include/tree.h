@@ -67,6 +67,16 @@ union LinkOrValue{
   /*alignas*/ void *value;
 };
 
+
+template<typename T>
+void pop_front(std::vector<T> &v)
+{
+  if (!v.empty()) {
+    v.erase(v.begin());
+  }
+}
+
+
 struct BigSuffix{
   std::vector<KeySlice> slices = {};
   size_t lastSliceSize = 0;
@@ -77,6 +87,23 @@ struct BigSuffix{
   : slices(std::move(slices_))
   , lastSliceSize(lastSliceSize_)
   {}
+
+  SliceWithSize getCurrentSlice() const{
+    if(hasNext()){
+      return SliceWithSize(slices[0], 8);
+    }else{
+      return SliceWithSize(slices[0], lastSliceSize);
+    }
+  }
+
+  bool hasNext() const{
+    return slices.size() >= 2;
+  }
+
+  void next(){
+    assert(hasNext());
+    pop_front(slices);
+  }
 
   /**
    * from以降で、keyがsuffixと一致するか
@@ -92,6 +119,14 @@ struct BigSuffix{
       return true;
     }
   }
+
+  static BigSuffix *from(const Key &key, size_t from){
+    std::vector<KeySlice> tmp{};
+    for(size_t j = from; j < key.slices.size(); ++j){
+      tmp.push_back(key.slices[j]);
+    }
+    return new BigSuffix(std::move(tmp), key.lastSliceSize());
+  }
 };
 
 /**
@@ -100,9 +135,7 @@ struct BigSuffix{
  *
  */
 struct KeySuffix{
-  std::array<
-    std::unique_ptr<BigSuffix>,
-    Node::ORDER - 1> suffixes = {};
+  std::array<BigSuffix*,Node::ORDER - 1> suffixes = {};
 
   KeySuffix() = default;
 
@@ -113,11 +146,15 @@ struct KeySuffix{
    * @param from
    */
   void set(size_t i, const Key &key, size_t from){
-    std::vector<KeySlice> tmp{};
-    for(size_t j = from; j < key.slices.size(); ++j){
-      tmp.push_back(key.slices[j]);
-    }
-    suffixes[i] = std::make_unique<BigSuffix>(std::move(tmp), key.lastSliceSize());
+    suffixes[i] = BigSuffix::from(key, from);
+  }
+
+  void set(size_t i, BigSuffix* ptr){
+    suffixes[i] = ptr;
+  }
+
+  BigSuffix* get(size_t i){
+    return suffixes[i];
   }
 
   /**
