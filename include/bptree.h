@@ -34,14 +34,14 @@ Node *start_new_tree(const Key &key, void *value){
   return root;
 }
 
-std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key){
-  if(key.hasNext()){
+std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
+  if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
-    for(size_t i = 0; i < borderNode->numberOfKeys(); ++i){
-      if((borderNode->key_len[i] == BorderNode::key_len_has_suffix
-        || borderNode->key_len[i] == BorderNode::key_len_layer)
-        && borderNode->key_slice[i] == cursor.slice
-      ){
+    for (size_t i = 0; i < borderNode->numberOfKeys(); ++i) {
+      if ((borderNode->key_len[i] == BorderNode::key_len_has_suffix
+           || borderNode->key_len[i] == BorderNode::key_len_layer)
+          && borderNode->key_slice[i] == cursor.slice
+        ) {
         return i;
       }
     }
@@ -49,15 +49,52 @@ std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &k
   return std::nullopt;
 }
 
-bool check_break_invariant(const Key &key, const BigSuffix* bigSuffix){
-  if(key.hasNext() and bigSuffix->hasNext()){
-    auto key_cursor = key.getCurrentSlice();
-    auto suffix_cursor = bigSuffix->getCurrentSlice();
-    if(key_cursor.slice == suffix_cursor.slice){
-      return true;
+void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
+  if(border->key_len[old_index] == BorderNode::key_len_has_suffix){
+    /**
+    * """
+    * Masstree creates a new layer when inserting a key k1 into
+    * a border node that contains a conflicting key k2. It allocates
+    * a new empty border node n′, inserts k2’s current value into
+    * it under the appropriate key slice, and then replaces k2’s
+    * value in n with the next_layer pointer n . Finally, it unlocks
+    * n and continues the attempt to insert k1, now using the newly
+    * created layer n'.
+    * """
+    *
+    * @see §4.6.3
+    */
+    lock(border);
+    auto n1 = new BorderNode;
+    n1->version.is_root = true;
+    auto k2_val = border->lv[old_index].value;
+    auto k2_suffix_copy = new BigSuffix(*border->key_suffixes.get(old_index));
+    if(k2_suffix_copy->hasNext()){
+      n1->key_len[0] = BorderNode::key_len_has_suffix;
+      n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
+      k2_suffix_copy->next();
+      n1->key_suffixes.set(0, k2_suffix_copy);
+      n1->lv[0].value = k2_val;
+    }else{
+      n1->key_len[0] = k2_suffix_copy->getCurrentSlice().size;
+      n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
+      n1->lv[0].value = k2_val;
+      delete k2_suffix_copy;
+      k2_suffix_copy = nullptr;
     }
+
+    border->key_len[old_index] = BorderNode::key_len_layer;
+    border->key_suffixes.delete_ptr(old_index);
+    border->lv[old_index].next_layer = n1;
+
+    unlock(border);
+    key.next();
+    insert(border->lv[old_index].next_layer, key, value);
+  }else{
+    assert(border->key_len[old_index] == BorderNode::key_len_layer);
+    key.next();
+    insert(border->lv[old_index].next_layer, key, value);
   }
-  return false;
 }
 
 /**
@@ -68,59 +105,6 @@ bool check_break_invariant(const Key &key, const BigSuffix* bigSuffix){
  * @param value
  */
 void insert_into_border(BorderNode *border, Key &key, void *value){
-  // 簡単のため、先にnew layerを作る場合の処理について扱います
-  auto check = check_break_invariant(border, key);
-  if(check){
-    auto index = check.value();
-    if(border->key_len[index] == BorderNode::key_len_has_suffix){
-      /**
-       * """
-       * Masstree creates a new layer when inserting a key k1 into
-       * a border node that contains a conflicting key k2. It allocates
-       * a new empty border node n′, inserts k2’s current value into
-       * it under the appropriate key slice, and then replaces k2’s
-       * value in n with the next_layer pointer n . Finally, it unlocks
-       * n and continues the attempt to insert k1, now using the newly
-       * created layer n'.
-       * """
-       *
-       * @see §4.6.3
-       */
-      lock(border);
-      auto n1 = new BorderNode;
-      n1->version.is_root = true;
-      auto k2_val = border->lv[index].value;
-      auto k2_suffix_copy = new BigSuffix(*border->key_suffixes.get(index));
-      if(k2_suffix_copy->hasNext()){
-        n1->key_len[0] = BorderNode::key_len_has_suffix;
-        n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
-        k2_suffix_copy->next();
-        n1->key_suffixes.set(0, k2_suffix_copy);
-        n1->lv[0].value = k2_val;
-      }else{
-        n1->key_len[0] = k2_suffix_copy->getCurrentSlice().size;
-        n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
-        n1->lv[0].value = k2_val;
-        delete k2_suffix_copy;
-        k2_suffix_copy = nullptr;
-      }
-
-      border->key_len[index] = BorderNode::key_len_layer;
-      border->key_suffixes.delete_ptr(index);
-      border->lv[index].next_layer = n1;
-
-      unlock(border);
-      key.next();
-      // 本当に、Borderに直接ジャンプしていいの？
-      insert_into_border(n1, key, value);
-    }else{
-      assert(border->key_len[index] == BorderNode::key_len_layer);
-      key.next();
-      insert(border->lv[index].next_layer, key, value);
-    }
-    return;
-  }
-
   size_t insertion_point = 0;
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
@@ -145,11 +129,9 @@ void insert_into_border(BorderNode *border, Key &key, void *value){
   }else{
     assert(cursor.size == 8);
     if(key.hasNext()){
+      // invariantを満たさない場合の処理は完了したので、ここでは
+      // チェック不要
       border->key_slice[insertion_point] = cursor.slice;
-      // invariantを満たさない場合がある。
-      // 満たさない間は、new layerを作り続ける
-      // 満たしたら、sliceに入れるか、suffixに入れる
-      // 面倒なので、とりあえずslicesに保存します
       border->key_len[insertion_point] = BorderNode::key_len_has_suffix;
       border->key_suffixes.set(insertion_point, key, key.cursor + 1);
       border->lv[insertion_point].value = value;
@@ -258,11 +240,9 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
   }else{
     assert(cursor.size == 8);
     if(k.hasNext()){
+      // invariantを満たさない場合は、splitは発生しない。
+      // よって、チェックする必要がない。
       temp_key_slice[insertion_index] = cursor.slice;
-      // invariantを満たさない場合がある。
-      // 満たさない間は、new layerを作り続ける
-      // 満たしたら、sliceに入れるか、suffixに入れる
-      // 面倒なので、とりあえずslicesに保存します
       temp_key_len[insertion_index] = BorderNode::key_len_has_suffix;
       temp_suffix[insertion_index] = BigSuffix::from(k, k.cursor + 1);
       temp_lv[insertion_index].value = value;
@@ -376,7 +356,6 @@ Node *split(Node *n, const Key &k, void *value){
   n->version.splitting = true;
   // n1 is initially locked
   n1->version = n->version;
-  auto cursor = k.getCurrentSlice();
   split_keys_among(
     reinterpret_cast<BorderNode *>(n),
     reinterpret_cast<BorderNode *>(n1), k, value);
@@ -438,7 +417,17 @@ Node *insert(Node *root, Key &key, void* value){
   auto border = border_v.first;
 
   /**
-   * Case 3: border nodeに空きがある場合
+   * Case 3: invariantを満たさず、故にborder node内の要素が
+   * 増えない場合
+   */
+  auto check = check_break_invariant(border, key);
+  if(check){
+    handle_break_invariant(border, key, value, check.value());
+    return root;
+  }
+
+  /**
+   * Case 4: border nodeに空きがある場合
    */
   if(border->isNotFull()){
     insert_into_border(border, key, value);
@@ -446,7 +435,8 @@ Node *insert(Node *root, Key &key, void* value){
   }
 
   /**
-   * Case 4: border nodeに空きが無い場合
+   * Case 5: border nodeに空きが無い場合
+   * invariantを満たす場合は、要素数は増えないのでsplitは発生しない
    */
   lock(border);
   auto new_root = split(border, key, value);
