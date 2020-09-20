@@ -117,8 +117,8 @@ struct BigSuffix{
       if(key.slices[i + from] != slices[i]){
         return false;
       }
-      return true;
     }
+    return true;
   }
 
   static BigSuffix *from(const Key &key, size_t from){
@@ -159,7 +159,9 @@ struct KeySuffix{
   }
 
   void delete_ptr(size_t i){
-
+    BigSuffix *ptr = suffixes[i];
+    delete ptr;
+    suffixes[i] = nullptr;
   }
 
   /**
@@ -192,7 +194,7 @@ enum ExtractResult: uint8_t {
 struct BorderNode: Node{
   static constexpr uint8_t key_len_layer = 255;
   static constexpr uint8_t key_len_unstable = 254;
-  static constexpr uint8_t key_ken_has_suffix = 9;
+  static constexpr uint8_t key_len_has_suffix = 9;
 
   uint8_t n_removed = 0;
   /**
@@ -272,7 +274,7 @@ struct BorderNode: Node{
     }else{ // next key sliceがある場合
       for(size_t i = 0; i < numberOfKeys(); ++i){
         if(key_slice[i] == current.slice){
-          if(key_len[i] == BorderNode::key_ken_has_suffix){
+          if(key_len[i] == BorderNode::key_len_has_suffix){
             // suffixの中を見る
             if(key_suffixes.isSame(i, key, key.cursor + 1)){
               return std::tuple(VALUE, lv[i], i);

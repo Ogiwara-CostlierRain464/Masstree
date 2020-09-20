@@ -150,6 +150,8 @@ InteriorNode *to_i(Node *n){
 }
 
 TEST(MasstreeTest, split){
+  // work at B+ tree test.
+
   Node *root = nullptr;
   for(uint64_t i = 1; i <= 10000; ++i){
     Key k({i}, 1);
@@ -163,4 +165,55 @@ TEST(MasstreeTest, split){
   auto p = get(root, k2341);
   assert(p != nullptr);
   EXPECT_EQ(*reinterpret_cast<int *>(p),2341);
+}
+
+TEST(MasstreeTest, break_invariant){
+  auto root = sample2();
+  Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
+  // kがここで変わってしまう。
+  insert(root, k, new int(3));
+
+
+  Key k2({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
+  auto p = get(root, k2);
+  assert(p != nullptr);
+  EXPECT_EQ(*reinterpret_cast<int *>(p),3);
+}
+
+TEST(MasstreeTest, break_invariant2){
+  Node *root = nullptr;
+  Key k({
+    0x8888'8888'8888'8888,
+    0x1111'1111'1111'1111,
+    0x2222'2222'2222'2222,
+    0x3333'3333'3333'3333,
+    0x0A0B'0000'0000'0000
+  },34);
+  root = insert(root, k, new int(1));
+  Key k1({
+    0x8888'8888'8888'8888,
+    0x1111'1111'1111'1111,
+    0x2222'2222'2222'2222,
+    0x0C0D'0000'0000'0000
+  },26);
+  root = insert(root, k1, new int(2));
+  // Key is mutable, but you can reset cursor.
+  k1.cursor = 0;
+  auto p = get(root, k1);
+  assert(p != nullptr);
+  EXPECT_EQ(*reinterpret_cast<int *>(p),2);
+
+  /**
+   * irb(main):009:0> 0x2222222222222222.to_s
+=> "2459565876494606882"
+irb(main):010:0> 0x3333333333333333.to_s
+=> "3689348814741910323"
+irb(main):011:0> 0x0C0D000000000000.to_s
+=> "868350303152373760"
+irb(main):012:0> 0x0A0B000000000000.to_s
+=> "723672165123096576"
+irb(main):013:0> 9838263505978427528.to_s(16)
+=> "8888888888888888"
+
+   */
 }

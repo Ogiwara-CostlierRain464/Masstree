@@ -22,7 +22,7 @@ Node *sample1(){
 Node *sample2(){
   auto root = new BorderNode;
 
-  root->key_len[0] = BorderNode::key_ken_has_suffix;
+  root->key_len[0] = BorderNode::key_len_has_suffix;
   root->key_slice[0] = 0x0001020304050607;
   Key key({0x0001'0203'0405'0607, 0x0A0B'0000'0000'0000}, 10);
   root->key_suffixes.set(0,key,1);
