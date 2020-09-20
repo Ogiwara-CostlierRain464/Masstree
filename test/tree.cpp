@@ -203,17 +203,42 @@ TEST(MasstreeTest, break_invariant2){
   assert(p != nullptr);
   EXPECT_EQ(*reinterpret_cast<int *>(p),2);
 
-  /**
-   * irb(main):009:0> 0x2222222222222222.to_s
-=> "2459565876494606882"
-irb(main):010:0> 0x3333333333333333.to_s
-=> "3689348814741910323"
-irb(main):011:0> 0x0C0D000000000000.to_s
-=> "868350303152373760"
-irb(main):012:0> 0x0A0B000000000000.to_s
-=> "723672165123096576"
-irb(main):013:0> 9838263505978427528.to_s(16)
-=> "8888888888888888"
-
-   */
 }
+
+TEST(MasstreeTest, break_invariant3){
+  auto pair = not_conflict_89();
+  auto root = insert(nullptr, pair.first, new int(1));
+  root = insert(root, pair.second, new int(7));
+  pair.second.cursor = 0;
+  auto p = get(root, pair.second);
+  EXPECT_EQ(*reinterpret_cast<int *>(p), 7);
+}
+
+TEST(MasstreeTest, p){
+  KeySlice slice = 0x0001020304050607;
+  Key k1({slice}, 1);
+  Key k2({slice}, 2);
+  Key k3({slice}, 3);
+  Key k4({slice}, 4);
+  Key k5({slice}, 5);
+  Key k6({slice}, 6);
+  Key k7({slice}, 7);
+  Key k8({slice}, 8);
+  Key k9({slice, CD}, 10);
+
+  auto root = insert(nullptr, k1, new int(1));
+  root = insert(root, k2, new int(2));
+  root = insert(root, k3, new int(3));
+  root = insert(root, k4, new int(4));
+  root = insert(root, k5, new int(5));
+  root = insert(root, k6, new int(6));
+  root = insert(root, k7, new int(7));
+  root = insert(root, k9, new int(9));
+  root = insert(root, k8, new int(8));
+
+  k8.cursor = 0;
+  auto p = get(root, k8);
+  EXPECT_EQ(*reinterpret_cast<int *>(p), 8);
+}
+
+
