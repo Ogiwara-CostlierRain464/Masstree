@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <random>
 #include "../include/key.h"
 #include "../include/tree.h"
 #include "sample.h"
@@ -239,6 +240,24 @@ TEST(MasstreeTest, p){
   k8.cursor = 0;
   auto p = get(root, k8);
   EXPECT_EQ(*reinterpret_cast<int *>(p), 8);
+}
+
+TEST(MasstreeTest, hard){
+  Node *root = nullptr;
+  for(size_t i = 0; i < 100000; ++i){
+    std::vector<KeySlice> slices{};
+    uint r = rand() % 100;
+    size_t j;
+    for(j = 1; j <= r; ++j){
+      slices.push_back(TWO);
+    }
+    slices.push_back(AB);
+
+    Key k(slices, (slices.size() -1) * 8 + 2);
+    root = insert(root, k, new int(i));
+  }
+
+  print_sub_tree(root);
 }
 
 

@@ -109,7 +109,7 @@ void insert_into_border(BorderNode *border, Key &key, void *value){
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
   while (insertion_point < num_keys
-  && border->key_slice[insertion_point] < cursor.slice){
+  && border->key_slice[insertion_point] < cursor.slice){ // NOTE: ここで、size見ないの？
     ++insertion_point;
   }
 
