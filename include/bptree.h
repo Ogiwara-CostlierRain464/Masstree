@@ -8,7 +8,7 @@ namespace masstree{
 
 Node *insert(Node *root, Key &key, void* value);
 
-Node *start_new_tree(const Key &key, void *value){
+BorderNode *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
   root->version.is_root = true;
 
@@ -81,7 +81,6 @@ void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t ol
       n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
       n1->lv[0].value = k2_val;
       delete k2_suffix_copy;
-      k2_suffix_copy = nullptr;
     }
 
     border->key_len[old_index] = BorderNode::key_len_layer;
