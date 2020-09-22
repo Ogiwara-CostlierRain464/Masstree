@@ -5,7 +5,7 @@
 
 using namespace masstree;
 
-Node *sample1(){
+static Node *sample1(){
   auto root = new BorderNode;
 
   root->key_slice[0] = 0x01020304;
@@ -19,7 +19,7 @@ Node *sample1(){
   return root;
 }
 
-Node *sample2(){
+static Node *sample2(){
   auto root = new BorderNode;
 
   root->key_len[0] = BorderNode::key_len_has_suffix;
@@ -32,7 +32,7 @@ Node *sample2(){
   return root;
 }
 
-Node *sample3(){
+static Node *sample3(){
   auto l1_root = new BorderNode;
   auto l2_root = new BorderNode;
 
@@ -52,7 +52,7 @@ Node *sample3(){
   return l1_root;
 }
 
-Node *sample4(){
+static Node *sample4(){
   auto root = new InteriorNode;
   auto _9 = new BorderNode;
   auto _11 = new BorderNode;
@@ -114,22 +114,22 @@ Node *sample4(){
  * 0x0C0D000000000000 => 868350303152373760
  */
 
-constexpr uint64_t ONE = 0x1111111111111111;
-constexpr uint64_t TWO = 0x2222222222222222;
-constexpr uint64_t THREE = 0x3333333333333333;
-constexpr uint64_t FOUR = 0x4444444444444444;
-constexpr uint64_t FIVE = 0x5555555555555555;
-constexpr uint64_t SIX = 0x6666666666666666;
-constexpr uint64_t SEVEN = 0x7777777777777777;
-constexpr uint64_t EIGHT = 0x8888888888888888;
-constexpr uint64_t NINE = 0x9999999999999999;
+static constexpr uint64_t ONE = 0x1111111111111111;
+static constexpr uint64_t TWO = 0x2222222222222222;
+static constexpr uint64_t THREE = 0x3333333333333333;
+static constexpr uint64_t FOUR = 0x4444444444444444;
+static constexpr uint64_t FIVE = 0x5555555555555555;
+static constexpr uint64_t SIX = 0x6666666666666666;
+static constexpr uint64_t SEVEN = 0x7777777777777777;
+static constexpr uint64_t EIGHT = 0x8888888888888888;
+static constexpr uint64_t NINE = 0x9999999999999999;
 
-constexpr uint64_t ONE_2_3 = 0x0102030000000000;
-constexpr uint64_t TWO_4_6_8 = 0x0204060800000000;
-constexpr uint64_t AB = 0x0A0B000000000000;
-constexpr uint64_t CD = 0x0C0D000000000000;
+static constexpr uint64_t ONE_2_3 = 0x0102030000000000;
+static constexpr uint64_t TWO_4_6_8 = 0x0204060800000000;
+static constexpr uint64_t AB = 0x0A0B000000000000;
+static constexpr uint64_t CD = 0x0C0D000000000000;
 
-std::pair<Key, Key> not_conflict_89(){
+static std::pair<Key, Key> not_conflict_89(){
   Key k8({
     ONE,
     TWO
@@ -144,7 +144,7 @@ std::pair<Key, Key> not_conflict_89(){
   return std::pair(k8, k9);
 }
 
-std::pair<Key, Key> conflicting(){
+static std::pair<Key, Key> conflicting(){
   Key k1({
     ONE,
     TWO,

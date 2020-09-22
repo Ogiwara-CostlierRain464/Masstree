@@ -69,7 +69,7 @@ union LinkOrValue{
 
 
 template<typename T>
-void pop_front(std::vector<T> &v)
+static void pop_front(std::vector<T> &v)
 {
   if (!v.empty()) {
     v.erase(v.begin());
@@ -342,14 +342,14 @@ struct BorderNode: Node{
   }
 };
 
-Version stableVersion(Node *n){
+static Version stableVersion(Node *n){
   Version v = n->version;
   while(v.inserting or v.splitting)
     v = n->version;
   return v;
 }
 
-void lock(Node *n){
+static void lock(Node *n){
   if(n == nullptr){
     return;
   }
@@ -370,7 +370,7 @@ void lock(Node *n){
 //  }
 }
 
-void unlock(Node *n){
+static void unlock(Node *n){
   auto copy_v = n->version;
 
   if(copy_v.inserting){
@@ -385,7 +385,7 @@ void unlock(Node *n){
   n->version = copy_v;
 }
 
-InteriorNode *lockedParent(Node *n){
+static InteriorNode *lockedParent(Node *n){
   retry: InteriorNode *p = n->parent; lock(p);
   if(p != n->parent){
     unlock(p); goto retry;
@@ -393,98 +393,6 @@ InteriorNode *lockedParent(Node *n){
 
   return p;
 }
-
-std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
-retry:
-  auto n = root; auto v = stableVersion(n);
-
-  if(!v.is_root){
-    root = root->parent; goto retry;
-  }
-descend:
-  if(n->version.is_border){
-    return std::pair(reinterpret_cast<BorderNode *>(n), v);
-  }
-  auto interior_n = reinterpret_cast<InteriorNode *>(n);
-  auto n1 = interior_n->findChild(key.getCurrentSlice().slice);
-  Version v1 = stableVersion(n1);
-  if((n->version ^ v) <= Version::lock){
-    n = n1; v = v1; goto descend;
-  }
-  auto v2 = stableVersion(n);
-  if(v2.v_split != v.v_split){
-    goto retry;
-  }
-  v = v2; goto descend;
-}
-
-
-void *get(Node *root, Key &k){
-  retry:
-  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
-  if(v.deleted)
-    goto retry;
-  auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
-  if((n->version ^ v) > Version::lock){
-    v = stableVersion(n); auto next = n->next;
-    while(!v.deleted and next != nullptr /**/){
-      n = next; v = stableVersion(n); next = n->next;
-    }
-    goto forward;
-  }else if(t == NOTFOUND){
-    return nullptr;
-  }else if(t == VALUE){
-    return lv.value;
-  }else if(t == LAYER){
-    root = lv.next_layer;
-    // advance k to next slice
-    k.next();
-    goto retry;
-  }else{ // t == UNSTABLE
-    goto forward;
-  }
-}
-
-/**
- * 存在するkeyに対して、そのvalueを書き換える
- * writeする位置の探索までは、論文中のgetを参考にする。
- *
- * keyが存在し、書き込みに成功した時にはtrueを、
- * keyが存在しなかった時にはfalseを返す
- */
-bool write(Node* root, Key &k, void* value){
-  retry:
-  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
-  if(v.deleted)
-    goto retry;
-  auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
-  auto t = std::get<0>(t_lv_i);
-  auto lv = std::get<1>(t_lv_i);
-  auto index = std::get<2>(t_lv_i);
-  if((n->version ^ v) > Version::lock){
-    v = stableVersion(n); auto next = n->next;
-    auto cursor = k.getCurrentSlice();
-    while(!v.deleted and next != nullptr and cursor.slice >= next->lowestKey()){
-      n = next; v = stableVersion(n); next = n->next;
-    }
-    goto forward;
-  }else if(t == NOTFOUND){
-    return false;
-  }else if(t == VALUE){
-    n->lv[index].value = value;
-    return true;
-  }else if(t == LAYER){
-    root = lv.next_layer;
-    // advance k to next slice
-    k.next();
-    goto retry;
-  }else{ // t == UNSTABLE
-    goto forward;
-  }
-}
-
 
 }
 

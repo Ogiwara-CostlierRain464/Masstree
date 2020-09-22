@@ -3,7 +3,7 @@
 #include "../include/key.h"
 #include "../include/tree.h"
 #include "sample.h"
-#include "../include/bptree.h"
+#include "../include/operation.h"
 
 using namespace masstree;
 
@@ -269,7 +269,7 @@ TEST(Tree, duplex){
 
 TEST(TreeTest, hard){
   Node *root = nullptr;
-  for(size_t i = 0; i < 100; ++i){
+  for(size_t i = 0; i < 10000; ++i){
     std::vector<KeySlice> slices{};
     size_t j;
     for(j = 1; j <= i; ++j){

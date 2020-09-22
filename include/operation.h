@@ -1,14 +1,106 @@
-#ifndef MASSTREE_BPTREE_H
-#define MASSTREE_BPTREE_H
+#ifndef MASSTREE_OPERATION_H
+#define MASSTREE_OPERATION_H
 
 #include "tree.h"
 #include <algorithm>
 
 namespace masstree{
 
-Node *insert(Node *root, Key &key, void* value);
+static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
+  retry:
+  auto n = root; auto v = stableVersion(n);
 
-BorderNode *start_new_tree(const Key &key, void *value){
+  if(!v.is_root){
+    root = root->parent; goto retry;
+  }
+  descend:
+  if(n->version.is_border){
+    return std::pair(reinterpret_cast<BorderNode *>(n), v);
+  }
+  auto interior_n = reinterpret_cast<InteriorNode *>(n);
+  auto n1 = interior_n->findChild(key.getCurrentSlice().slice);
+  Version v1 = stableVersion(n1);
+  if((n->version ^ v) <= Version::lock){
+    n = n1; v = v1; goto descend;
+  }
+  auto v2 = stableVersion(n);
+  if(v2.v_split != v.v_split){
+    goto retry;
+  }
+  v = v2; goto descend;
+}
+
+
+static void *get(Node *root, Key &k){
+  retry:
+  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  forward:
+  if(v.deleted)
+    goto retry;
+  auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
+  if((n->version ^ v) > Version::lock){
+    v = stableVersion(n); auto next = n->next;
+    while(!v.deleted and next != nullptr /**/){
+      n = next; v = stableVersion(n); next = n->next;
+    }
+    goto forward;
+  }else if(t == NOTFOUND){
+    return nullptr;
+  }else if(t == VALUE){
+    return lv.value;
+  }else if(t == LAYER){
+    root = lv.next_layer;
+    // advance k to next slice
+    k.next();
+    goto retry;
+  }else{ // t == UNSTABLE
+    goto forward;
+  }
+}
+
+/**
+ * 存在するkeyに対して、そのvalueを書き換える
+ * writeする位置の探索までは、論文中のgetを参考にする。
+ *
+ * keyが存在し、書き込みに成功した時にはtrueを、
+ * keyが存在しなかった時にはfalseを返す
+ */
+static bool write(Node* root, Key &k, void* value){
+  retry:
+  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  forward:
+  if(v.deleted)
+    goto retry;
+  auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
+  auto t = std::get<0>(t_lv_i);
+  auto lv = std::get<1>(t_lv_i);
+  auto index = std::get<2>(t_lv_i);
+  if((n->version ^ v) > Version::lock){
+    v = stableVersion(n); auto next = n->next;
+    auto cursor = k.getCurrentSlice();
+    while(!v.deleted and next != nullptr and cursor.slice >= next->lowestKey()){
+      n = next; v = stableVersion(n); next = n->next;
+    }
+    goto forward;
+  }else if(t == NOTFOUND){
+    return false;
+  }else if(t == VALUE){
+    n->lv[index].value = value;
+    return true;
+  }else if(t == LAYER){
+    root = lv.next_layer;
+    // advance k to next slice
+    k.next();
+    goto retry;
+  }else{ // t == UNSTABLE
+    goto forward;
+  }
+}
+
+
+static Node *insert(Node *root, Key &key, void* value);
+
+static BorderNode *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
   root->version.is_root = true;
 
@@ -35,7 +127,7 @@ BorderNode *start_new_tree(const Key &key, void *value){
   return root;
 }
 
-std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
+static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
     for (size_t i = 0; i < borderNode->numberOfKeys(); ++i) {
@@ -50,7 +142,7 @@ std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &k
   return std::nullopt;
 }
 
-void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
+static void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
   if(border->key_len[old_index] == BorderNode::key_len_has_suffix){
     /**
     * """
@@ -104,12 +196,12 @@ void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t ol
  * @param key
  * @param value
  */
-void insert_into_border(BorderNode *border, Key &key, void *value){
+static void insert_into_border(BorderNode *border, Key &key, void *value){
   size_t insertion_point = 0;
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
   while (insertion_point < num_keys
-  && border->key_slice[insertion_point] < cursor.slice){ // NOTE: ここで、size見ないの？
+         && border->key_slice[insertion_point] < cursor.slice){ // NOTE: ここで、size見ないの？
     ++insertion_point;
   }
 
@@ -150,7 +242,7 @@ void insert_into_border(BorderNode *border, Key &key, void *value){
  * BorderNodeでは使えない事に注意！
  * @return
  */
-size_t cut(size_t len){
+static size_t cut(size_t len){
   if(len % 2 == 0)
     return len/2;
   else
@@ -164,7 +256,7 @@ size_t cut(size_t len){
  * @param slice
  * @param n1
  */
-void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index){
+static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index){
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};
 
@@ -205,18 +297,18 @@ void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n
 }
 
 
-void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
+static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
   assert(!n->isNotFull());
   for(size_t i = 0; i < Node::ORDER - 1; ++i){
     if(!std::count(found.begin(), found.end(), n->key_slice[i])){ // NOT FOUND
-      table.push_back(std::pair(n->key_slice[i], i));
+      table.emplace_back(n->key_slice[i], i);
       found.push_back(n->key_slice[i]);
     }
   }
   // already sorted.
 }
 
-size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySlice, size_t>> &table, const std::vector<KeySlice> &found){
+static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySlice, size_t>> &table, const std::vector<KeySlice> &found){
   auto min_slice = *std::min_element(found.begin(), found.end());
   auto max_slice = *std::max_element(found.begin(), found.end());
   if(new_slice < min_slice){
@@ -256,7 +348,7 @@ size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySlice, siz
  * @param k
  * @param value
  */
-void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
+static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
   uint8_t temp_key_len[Node::ORDER] = {};
   uint64_t temp_key_slice[Node::ORDER] = {};
   LinkOrValue temp_lv[Node::ORDER] = {};
@@ -264,7 +356,7 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
 
   size_t insertion_index = 0;
   while (insertion_index < Node::ORDER - 1
-  && n->key_slice[insertion_index] < k.getCurrentSlice().slice){
+         && n->key_slice[insertion_index] < k.getCurrentSlice().slice){
     ++insertion_index;
   }
 
@@ -343,7 +435,7 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
  * @param right
  * @return
  */
-InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
+static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
   auto root = new InteriorNode;
   root->version.is_root = true;
   root->n_keys = 1;
@@ -361,7 +453,7 @@ InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right)
  * @param n1
  * @param slice
  */
-void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
+static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
   // move to right
   for(size_t i = p->n_keys; i > n_index; --i){
     p->child[i + 1] = p->child[i];
@@ -372,16 +464,16 @@ void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_inde
   ++p->n_keys;
 }
 
-size_t get_n_index(InteriorNode *parent, Node* n){
+static size_t get_n_index(InteriorNode *parent, Node* n){
   size_t n_index = 0;
   while (n_index <= parent->n_keys
-  && parent->child[n_index] != n){
+         && parent->child[n_index] != n){
     ++n_index;
   }
   return n_index;
 }
 
-KeySlice getMostLeftSlice(Node *n){
+static KeySlice getMostLeftSlice(Node *n){
   if(n->version.is_border){
     auto border = reinterpret_cast<BorderNode*>(n);
     return border->key_slice[0];
@@ -398,7 +490,7 @@ KeySlice getMostLeftSlice(Node *n){
  * @param value
  * @return new root if not nullptr.
  */
-Node *split(Node *n, const Key &k, void *value){
+static Node *split(Node *n, const Key &k, void *value){
   // precondition: n locked.
   assert(n->version.locked);
   Node *n1 = new BorderNode;
@@ -409,7 +501,7 @@ Node *split(Node *n, const Key &k, void *value){
   split_keys_among(
     reinterpret_cast<BorderNode *>(n),
     reinterpret_cast<BorderNode *>(n1), k, value);
-ascend:
+  ascend:
   InteriorNode *p = lockedParent(n);
   auto mostLeft = getMostLeftSlice(n1);
   if(p == nullptr){
@@ -448,7 +540,7 @@ ascend:
  * NormalなB+ treeを参考にして作る
  * rootが更新される場合があるので、rootへのポインタを返す
  */
-Node *insert(Node *root, Key &key, void* value){
+static Node *insert(Node *root, Key &key, void* value){
   /**
     * Case 1: Treeのrootが空の場合
     */
@@ -494,7 +586,7 @@ Node *insert(Node *root, Key &key, void* value){
 }
 
 
-void print_sub_tree(Node *root){
+static void print_sub_tree(Node *root){
   if(root->version.is_border){
     auto border = reinterpret_cast<BorderNode *>(root);
     border->printNode();
@@ -506,4 +598,4 @@ void print_sub_tree(Node *root){
 
 }
 
-#endif //MASSTREE_BPTREE_H
+#endif //MASSTREE_OPERATION_H
