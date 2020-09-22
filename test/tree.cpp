@@ -269,7 +269,7 @@ TEST(Tree, duplex){
 
 TEST(TreeTest, hard){
   Node *root = nullptr;
-  for(size_t i = 0; i < 10000; ++i){
+  for(size_t i = 0; i < 100; ++i){
     std::vector<KeySlice> slices{};
     size_t j;
     for(j = 1; j <= i; ++j){
@@ -354,4 +354,51 @@ TEST(BigSuffixTest, isSame){
 
   EXPECT_FALSE(suffix1.isSame(k1, 0));
 }
+
+
+
+class KeyTest: public ::testing::Test{};
+
+TEST(KeyTest, equal){
+  Key a({
+    TWO,
+    ONE
+  },15);
+  Key b({
+    TWO,
+    ONE
+  },16);
+
+  EXPECT_FALSE(a == b);
+}
+
+TEST(KeyTest, lastSliceSize){
+  Key a({
+    TWO,
+    ONE
+  },15);
+
+
+  EXPECT_EQ(a.lastSliceSize(), 7);
+}
+
+TEST(KeyTest, getCurrentSlice){
+  Key a({
+    TWO,
+    EIGHT,
+    ONE
+  },20);
+
+  a.next();
+  EXPECT_EQ(a.getCurrentSlice().slice, EIGHT);
+  a.next();
+  EXPECT_EQ(a.getCurrentSlice().size, 4);
+}
+
+
+class BorderNodeTest: public ::testing::Test{};
+
+
+
+
 
