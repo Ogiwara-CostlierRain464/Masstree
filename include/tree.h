@@ -118,6 +118,9 @@ struct BigSuffix{
         return false;
       }
     }
+    if(key.lastSliceSize() != lastSliceSize){
+      return false;
+    }
     return true;
   }
 
