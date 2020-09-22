@@ -36,8 +36,8 @@ struct InteriorNode: Node{
   Node *findChild(KeySlice slice){
     /**
      * B+ treeのinterior nodeと同じ走査方法
-     * 必ずnullptrを返さない。
-     *
+     * 左側：未満
+     * 右側：以上
      */
     for(size_t i = 0; i < n_keys; ++i){
       if(slice < key_slice[i]){
@@ -320,6 +320,10 @@ struct BorderNode: Node{
     return result;
   }
 
+  KeySlice lowestKey(){
+    return key_slice[0];
+  }
+
   void printNode(){
     printf("|");
     for(size_t i = 0; i < ORDER - 1; ++i){
@@ -452,7 +456,8 @@ bool write(Node* root, Key &k, void* value){
   auto index = std::get<2>(t_lv_i);
   if((n->version ^ v) > Version::lock){
     v = stableVersion(n); auto next = n->next;
-    while(!v.deleted and next != nullptr /**/){
+    auto cursor = k.getCurrentSlice();
+    while(!v.deleted and next != nullptr and cursor.slice >= next->lowestKey()){
       n = next; v = stableVersion(n); next = n->next;
     }
     goto forward;

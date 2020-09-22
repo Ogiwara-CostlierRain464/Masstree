@@ -2,6 +2,7 @@
 #define MASSTREE_BPTREE_H
 
 #include "tree.h"
+#include <algorithm>
 
 namespace masstree{
 
@@ -202,6 +203,55 @@ void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n
   }
 }
 
+
+void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
+  assert(!n->isNotFull());
+  for(size_t i = 0; i < Node::ORDER - 1; ++i){
+    if(!std::count(found.begin(), found.end(), n->key_slice[i])){ // NOT FOUND
+      table.push_back(std::pair(n->key_slice[i], i));
+      found.push_back(n->key_slice[i]);
+    }
+  }
+  // already sorted.
+}
+
+size_t split_point(KeySlice new_slice, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
+  auto min_slice = *std::min_element(found.begin(), found.end());
+  auto max_slice = *std::max_element(found.begin(), found.end());
+  if(new_slice < min_slice){
+    return 2;
+  } else if(new_slice == min_slice){
+    for(size_t i = 0; i < table.size(); ++i){
+      if(table[i].first == new_slice){
+        return table[i+1].second;
+      }
+    }
+  } else if(min_slice < new_slice and new_slice < min_slice){
+    if(std::count(found.begin(), found.end(), new_slice)){ // new_sliceが存在していたなら
+      for(size_t i = 0; i < table.size(); ++i){
+        if(table[i].first == new_slice){
+          return table[i].second;
+        }
+      }
+    }else{
+      for(size_t i = 0; i < table.size(); ++i){
+        if(table[i].first > new_slice){
+          return table[i].second;
+        }
+      }
+    }
+  } else if(new_slice == max_slice){
+    for(size_t i = 0; i < table.size(); ++i){
+      if(table[i].first == new_slice){
+        return table[i].second;
+      }
+    }
+  }else{
+    assert(new_slice > max_slice);
+    return 15;
+  }
+}
+
 /**
  * Corresponds to insert_into_leaf_after_splitting in B+ tree.
  * @param n
@@ -253,6 +303,11 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
     }
   }
 
+  // ここの決定がキモ！
+  std::vector<std::pair<KeySlice, size_t>> table{};
+  std::vector<KeySlice> found{};
+  create_slice_table(n, table, found);
+  size_t split = split_point(cursor.slice, table, found);
   // clear both nodes.
   std::fill(n->key_len.begin(), n->key_len.end(), 0);
   std::fill(n->key_slice.begin(), n->key_slice.end(), 0);
@@ -263,8 +318,6 @@ void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
   std::fill(n1->key_slice.begin(), n1->key_slice.end(), 0);
   std::fill(n1->lv.begin(), n1->lv.end(), LinkOrValue{});
   n1->key_suffixes.reset();
-
-  size_t split = cut(Node::ORDER - 1);
 
   for(size_t i = 0; i < split; ++i){
     n->key_len[i] = temp_key_len[i];

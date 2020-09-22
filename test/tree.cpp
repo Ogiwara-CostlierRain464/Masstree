@@ -59,7 +59,7 @@ TEST(TreeTest, sample2){
   EXPECT_EQ(*reinterpret_cast<int *>(b.first->lv[0].value), 1);
 }
 
-TEST(MasstreeTest, sample3){
+TEST(TreeTest, sample3){
   auto root = sample3();
   Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
 
@@ -67,7 +67,7 @@ TEST(MasstreeTest, sample3){
   EXPECT_EQ(b.first->key_len[0], BorderNode::key_len_layer);
 }
 
-TEST(MasstreeTest, get1){
+TEST(TreeTest, get1){
   auto root = sample2();
   Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
 
@@ -77,7 +77,7 @@ TEST(MasstreeTest, get1){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 1);
 }
 
-TEST(MasstreeTest, get2){
+TEST(TreeTest, get2){
   auto root = sample3();
   Key key({0x0001020304050607, 0x0C0D'0000'0000'0000}, 10);
 
@@ -87,7 +87,7 @@ TEST(MasstreeTest, get2){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 2);
 }
 
-TEST(MasstreeTest, get3){
+TEST(TreeTest, get3){
   auto root = sample4();
   Key key({0x0101}, 2);
 
@@ -103,7 +103,7 @@ TEST(MasstreeTest, get3){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 320);
 }
 
-TEST(MasstreeTest, get4){
+TEST(TreeTest, get4){
   auto root = sample4();
   Key key({ 0x0101 }, 2);
 
@@ -114,7 +114,7 @@ TEST(MasstreeTest, get4){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 23);
 }
 
-TEST(MasstreeTest, start_new_tree){
+TEST(TreeTest, start_new_tree){
   Key key({
     0x0102030405060708,
     0x0102030405060708,
@@ -127,7 +127,7 @@ TEST(MasstreeTest, start_new_tree){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 100);
 }
 
-TEST(MasstreeTest, insert){
+TEST(TreeTest, insert){
   Key key1({
     0x0102030405060708,
     0x0A0B000000000000
@@ -150,7 +150,7 @@ InteriorNode *to_i(Node *n){
   return reinterpret_cast<InteriorNode *>(n);
 }
 
-TEST(MasstreeTest, split){
+TEST(TreeTest, split){
   // work at B+ tree test.
 
   Node *root = nullptr;
@@ -168,7 +168,7 @@ TEST(MasstreeTest, split){
   EXPECT_EQ(*reinterpret_cast<int *>(p),2341);
 }
 
-TEST(MasstreeTest, break_invariant){
+TEST(TreeTest, break_invariant){
   auto root = sample2();
   Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
   // kがここで変わってしまう。
@@ -181,7 +181,7 @@ TEST(MasstreeTest, break_invariant){
   EXPECT_EQ(*reinterpret_cast<int *>(p),3);
 }
 
-TEST(MasstreeTest, break_invariant2){
+TEST(TreeTest, break_invariant2){
   Node *root = nullptr;
   Key k({
     0x8888'8888'8888'8888,
@@ -206,7 +206,7 @@ TEST(MasstreeTest, break_invariant2){
 
 }
 
-TEST(MasstreeTest, break_invariant3){
+TEST(TreeTest, break_invariant3){
   auto pair = not_conflict_89();
   auto root = insert(nullptr, pair.first, new int(1));
   root = insert(root, pair.second, new int(7));
@@ -215,7 +215,7 @@ TEST(MasstreeTest, break_invariant3){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 7);
 }
 
-TEST(MasstreeTest, p){
+TEST(TreeTest, p){
   KeySlice slice = 0x0001020304050607;
   Key k1({slice}, 1);
   Key k2({slice}, 2);
@@ -242,13 +242,37 @@ TEST(MasstreeTest, p){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 8);
 }
 
-TEST(MasstreeTest, hard){
+TEST(Tree, duplex){
+  Key k({
+    EIGHT,
+    EIGHT,
+    CD
+  },18);
+  Key k1({
+    EIGHT,
+    AB
+  },10);
+  Key k2({
+    EIGHT,
+    EIGHT,
+    CD
+  },18);
+
   Node *root = nullptr;
-  for(size_t i = 0; i < 100000; ++i){
+  root = insert(root, k, new int(4));
+  root = insert(root, k1, new int(8));
+  root = insert(root, k2, new int(6));
+  k.cursor = 0;
+  auto p = get(root, k);
+  EXPECT_EQ(*reinterpret_cast<int *>(p), 6);
+}
+
+TEST(TreeTest, hard){
+  Node *root = nullptr;
+  for(size_t i = 0; i < 10000; ++i){
     std::vector<KeySlice> slices{};
-    uint r = rand() % 100;
     size_t j;
-    for(j = 1; j <= r; ++j){
+    for(j = 1; j <= i; ++j){
       slices.push_back(TWO);
     }
     slices.push_back(AB);
@@ -257,7 +281,15 @@ TEST(MasstreeTest, hard){
     root = insert(root, k, new int(i));
   }
 
+  Key k({TWO, TWO, TWO, AB}, 26);
+  auto p = get(root, k);
+  EXPECT_TRUE(p != nullptr);
+
   print_sub_tree(root);
+
+  // 現在は、「keyはunique」という前提は置かれているが、「key sliceはunique」という前提が
+  // 破綻している。interior nodeには同じkey sliceが現れないようにしなければならない。
+  // 今度は、重複するkeyを先に見つけられていない。
 }
 
 
