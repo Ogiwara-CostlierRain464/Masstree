@@ -146,6 +146,8 @@ void insert_into_border(BorderNode *border, Key &key, void *value){
 /**
  * Finds the appropriate place to
  * split a node that is too big into two.
+ *
+ * BorderNodeでは使えない事に注意！
  * @return
  */
 size_t cut(size_t len){
@@ -214,18 +216,14 @@ void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> 
   // already sorted.
 }
 
-size_t split_point(KeySlice new_slice, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
+size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySlice, size_t>> &table, const std::vector<KeySlice> &found){
   auto min_slice = *std::min_element(found.begin(), found.end());
   auto max_slice = *std::max_element(found.begin(), found.end());
   if(new_slice < min_slice){
-    return 2;
+    return 1;
   } else if(new_slice == min_slice){
-    for(size_t i = 0; i < table.size(); ++i){
-      if(table[i].first == new_slice){
-        return table[i+1].second;
-      }
-    }
-  } else if(min_slice < new_slice and new_slice < min_slice){
+    return table[1].second;
+  } else if(min_slice < new_slice and new_slice < max_slice){
     if(std::count(found.begin(), found.end(), new_slice)){ // new_sliceが存在していたなら
       for(size_t i = 0; i < table.size(); ++i){
         if(table[i].first == new_slice){

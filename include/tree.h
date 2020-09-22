@@ -153,6 +153,12 @@ struct KeySuffix{
     suffixes[i] = BigSuffix::from(key, from);
   }
 
+  /**
+   * NOTE: ptrはdeleteされる可能性があるため、Stackではなく
+   * Heapに設置する事に注意
+   * @param i
+   * @param ptr
+   */
   void set(size_t i, BigSuffix* ptr){
     suffixes[i] = ptr;
   }
