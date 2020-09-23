@@ -550,6 +550,8 @@ static void print_sub_tree(Node *root){
  * @param root 各layerのroot
  * @param key
  * @param value
+ * @param upper_layer rootをnext_layerとして持つnode
+ * @param upper_index rootをnext_layerとして持つnode中のindex
  * @return
  */
 static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_t upper_index){

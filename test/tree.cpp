@@ -269,10 +269,15 @@ TEST(Tree, duplex){
 
 TEST(TreeTest, hard){
   Node *root = nullptr;
-  for(size_t i = 0; i < 10000; ++i){
+  bool if_three = false;
+  for(size_t i = 0; i < 4000; ++i){
     std::vector<KeySlice> slices{};
     size_t j;
-    for(j = 1; j <= i; ++j){
+    size_t r = rand() % 100;
+    if(r == 3)
+      if_three = true;
+
+    for(j = 1; j <= r; ++j){
       slices.push_back(TWO);
     }
     slices.push_back(AB);
