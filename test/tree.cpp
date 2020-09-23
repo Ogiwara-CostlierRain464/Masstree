@@ -135,8 +135,8 @@ TEST(TreeTest, insert){
   Key key2({
     0x1112131415161718
   }, 8);
-  auto root = insert(nullptr, key1, new int(1));
-  root = insert(root, key2, new int(2));
+  auto root = put(nullptr, key1, new int(1), nullptr, 0);
+  root = put(root, key2, new int(2), nullptr, 0);
   auto p = get(root, key1);
   assert(p != nullptr);
   EXPECT_EQ(*reinterpret_cast<int *>(p), 1);
@@ -156,7 +156,7 @@ TEST(TreeTest, split){
   Node *root = nullptr;
   for(uint64_t i = 1; i <= 10000; ++i){
     Key k({i}, 1);
-    root = insert(root, k, new int(i));
+    root = put(root, k, new int(i), nullptr, 0);
   }
 
   print_sub_tree(root);
@@ -172,7 +172,7 @@ TEST(TreeTest, break_invariant){
   auto root = sample2();
   Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
   // kがここで変わってしまう。
-  insert(root, k, new int(3));
+  put(root, k, new int(3), nullptr, 0);
 
 
   Key k2({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
@@ -190,14 +190,14 @@ TEST(TreeTest, break_invariant2){
     0x3333'3333'3333'3333,
     0x0A0B'0000'0000'0000
   },34);
-  root = insert(root, k, new int(1));
+  root = put(root, k, new int(1), nullptr, 0);
   Key k1({
     0x8888'8888'8888'8888,
     0x1111'1111'1111'1111,
     0x2222'2222'2222'2222,
     0x0C0D'0000'0000'0000
   },26);
-  root = insert(root, k1, new int(2));
+  root = put(root, k1, new int(2), nullptr, 0);
   // Key is mutable, but you can reset cursor.
   k1.cursor = 0;
   auto p = get(root, k1);
@@ -208,8 +208,8 @@ TEST(TreeTest, break_invariant2){
 
 TEST(TreeTest, break_invariant3){
   auto pair = not_conflict_89();
-  auto root = insert(nullptr, pair.first, new int(1));
-  root = insert(root, pair.second, new int(7));
+  auto root = put(nullptr, pair.first, new int(1), nullptr, 0);
+  root = put(root, pair.second, new int(7), nullptr, 0);
   pair.second.cursor = 0;
   auto p = get(root, pair.second);
   EXPECT_EQ(*reinterpret_cast<int *>(p), 7);
@@ -227,15 +227,15 @@ TEST(TreeTest, p){
   Key k8({slice}, 8);
   Key k9({slice, CD}, 10);
 
-  auto root = insert(nullptr, k1, new int(1));
-  root = insert(root, k2, new int(2));
-  root = insert(root, k3, new int(3));
-  root = insert(root, k4, new int(4));
-  root = insert(root, k5, new int(5));
-  root = insert(root, k6, new int(6));
-  root = insert(root, k7, new int(7));
-  root = insert(root, k9, new int(9));
-  root = insert(root, k8, new int(8));
+  auto root = put(nullptr, k1, new int(1), nullptr, 0);
+  root = put(root, k2, new int(2), nullptr, 0);
+  root = put(root, k3, new int(3), nullptr, 0);
+  root = put(root, k4, new int(4), nullptr, 0);
+  root = put(root, k5, new int(5), nullptr, 0);
+  root = put(root, k6, new int(6), nullptr, 0);
+  root = put(root, k7, new int(7), nullptr, 0);
+  root = put(root, k9, new int(9), nullptr, 0);
+  root = put(root, k8, new int(8), nullptr, 0);
 
   k8.cursor = 0;
   auto p = get(root, k8);
@@ -259,9 +259,9 @@ TEST(Tree, duplex){
   },18);
 
   Node *root = nullptr;
-  root = insert(root, k, new int(4));
-  root = insert(root, k1, new int(8));
-  root = insert(root, k2, new int(6));
+  root = put(root, k, new int(4), nullptr, 0);
+  root = put(root, k1, new int(8), nullptr, 0);
+  root = put(root, k2, new int(6), nullptr, 0);
   k.cursor = 0;
   auto p = get(root, k);
   EXPECT_EQ(*reinterpret_cast<int *>(p), 6);
@@ -278,7 +278,7 @@ TEST(TreeTest, hard){
     slices.push_back(AB);
 
     Key k(slices, (slices.size() -1) * 8 + 2);
-    root = insert(root, k, new int(i));
+    root = put(root, k, new int(i), nullptr, 0);
   }
 
   Key k({TWO, TWO, TWO, AB}, 26);

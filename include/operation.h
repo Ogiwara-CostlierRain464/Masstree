@@ -32,15 +32,15 @@ static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
 
 
 static void *get(Node *root, Key &k){
-  retry:
+retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
+forward:
   if(v.deleted)
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
   if((n->version ^ v) > Version::lock){
     v = stableVersion(n); auto next = n->next;
-    while(!v.deleted and next != nullptr /**/){
+    while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
       n = next; v = stableVersion(n); next = n->next;
     }
     goto forward;
@@ -66,9 +66,9 @@ static void *get(Node *root, Key &k){
  * keyが存在しなかった時にはfalseを返す
  */
 static bool write(Node* root, Key &k, void* value){
-  retry:
+retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
+forward:
   if(v.deleted)
     goto retry;
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
@@ -96,9 +96,6 @@ static bool write(Node* root, Key &k, void* value){
     goto forward;
   }
 }
-
-
-static Node *insert(Node *root, Key &key, void* value);
 
 static BorderNode *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
@@ -142,6 +139,8 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
   return std::nullopt;
 }
 
+static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_t upper_index);
+
 static void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
   if(border->key_len[old_index] == BorderNode::key_len_has_suffix){
     /**
@@ -181,11 +180,11 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
 
     unlock(border);
     key.next();
-    insert(border->lv[old_index].next_layer, key, value);
+    put(border->lv[old_index].next_layer, key, value, border, old_index);
   }else{
     assert(border->key_len[old_index] == BorderNode::key_len_layer);
     key.next();
-    insert(border->lv[old_index].next_layer, key, value);
+    put(border->lv[old_index].next_layer, key, value, border, old_index);
   }
 }
 
@@ -494,6 +493,7 @@ static Node *split(Node *n, const Key &k, void *value){
   // precondition: n locked.
   assert(n->version.locked);
   Node *n1 = new BorderNode;
+  // splitする時点で、nはrootにはなり得ない
   n->version.is_root = false;
   n->version.splitting = true;
   // n1 is initially locked
@@ -535,57 +535,6 @@ static Node *split(Node *n, const Key &k, void *value){
   }
 }
 
-
-/**
- * NormalなB+ treeを参考にして作る
- * rootが更新される場合があるので、rootへのポインタを返す
- */
-static Node *insert(Node *root, Key &key, void* value){
-  /**
-    * Case 1: Treeのrootが空の場合
-    */
-  if(root == nullptr){
-    return start_new_tree(key, value);
-  }
-
-  /**
-   * Case 2: すでにKeyが存在している場合
-   */
-  if(write(root, key, value)){
-    return root;
-  }
-
-  auto border_v = findBorder(root, key);
-  auto border = border_v.first;
-
-  /**
-   * Case 3: invariantを満たさず、故にborder node内の要素が
-   * 増えない場合
-   */
-  auto check = check_break_invariant(border, key);
-  if(check){
-    handle_break_invariant(border, key, value, check.value());
-    return root;
-  }
-
-  /**
-   * Case 4: border nodeに空きがある場合
-   */
-  if(border->isNotFull()){
-    insert_into_border(border, key, value);
-    return root;
-  }
-
-  /**
-   * Case 5: border nodeに空きが無い場合
-   * invariantを満たす場合は、要素数は増えないのでsplitは発生しない
-   */
-  lock(border);
-  auto new_root = split(border, key, value);
-  return new_root ? new_root : root;
-}
-
-
 static void print_sub_tree(Node *root){
   if(root->version.is_border){
     auto border = reinterpret_cast<BorderNode *>(root);
@@ -594,6 +543,76 @@ static void print_sub_tree(Node *root){
     auto interior = reinterpret_cast<InteriorNode *>(root);
     interior->printNode();
   }
+}
+
+/**
+ * treeにkey-valueを配置する。
+ * @param root 各layerのroot
+ * @param key
+ * @param value
+ * @return
+ */
+static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_t upper_index){
+  if(root == nullptr){
+    // Layer0が空の時のみここに来る
+    assert(upper_layer == nullptr);
+    return start_new_tree(k, value);
+  }
+retry:
+  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+forward:
+  if(v.deleted)
+    goto retry;
+  auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
+  auto t = std::get<0>(t_lv_i);
+  auto lv = std::get<1>(t_lv_i);
+  auto index = std::get<2>(t_lv_i);
+  if((n->version ^ v) > Version::lock){
+    v = stableVersion(n); auto next = n->next;
+    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
+      n = next; v = stableVersion(n); next = n->next;
+    }
+    goto forward;
+  }else if(t == NOTFOUND){
+    // insertをする
+    auto check = check_break_invariant(n, k);
+    if(check){
+      handle_break_invariant(n, k, value, check.value());
+    }else{
+      if(n->isNotFull()){
+        insert_into_border(n, k, value);
+      }else{
+        lock(n);
+        auto may_new_root = split(n, k, value);
+        if(may_new_root != nullptr){
+          // rootがsplitによって新しくなったので、Layer0以外においては
+          // 上のlayerのlv.next_layerを更新する必要がある
+          if(upper_layer != nullptr){
+            upper_layer->lv[upper_index].next_layer = may_new_root;
+          }
+
+          return may_new_root;
+        }
+      }
+    }
+  }else if(t == VALUE){
+    // 上書きする
+    // NOTE: 並行時には、古い値をGCする時に注意
+    delete n->lv[index].value;
+    n->lv[index].value = value;
+  }else if(t == LAYER){
+    k.next();
+    put(lv.next_layer, k, value, n, index);
+  }else {
+    assert(t == UNSTABLE);
+    goto forward;
+  }
+
+  return root;
+}
+
+static void remove(Key &key){
+
 }
 
 }
