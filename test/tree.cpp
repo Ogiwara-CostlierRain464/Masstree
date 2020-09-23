@@ -107,7 +107,7 @@ TEST(TreeTest, get4){
   auto root = sample4();
   Key key({ 0x0101 }, 2);
 
-  write(root, key, new int(23));
+  root = put(root, key, new int(23), nullptr, 0);
   auto p = get(root, key);
 
   assert(p != nullptr);

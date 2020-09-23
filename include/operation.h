@@ -58,45 +58,6 @@ forward:
   }
 }
 
-/**
- * 存在するkeyに対して、そのvalueを書き換える
- * writeする位置の探索までは、論文中のgetを参考にする。
- *
- * keyが存在し、書き込みに成功した時にはtrueを、
- * keyが存在しなかった時にはfalseを返す
- */
-static bool write(Node* root, Key &k, void* value){
-retry:
-  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-forward:
-  if(v.deleted)
-    goto retry;
-  auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
-  auto t = std::get<0>(t_lv_i);
-  auto lv = std::get<1>(t_lv_i);
-  auto index = std::get<2>(t_lv_i);
-  if((n->version ^ v) > Version::lock){
-    v = stableVersion(n); auto next = n->next;
-    auto cursor = k.getCurrentSlice();
-    while(!v.deleted and next != nullptr and cursor.slice >= next->lowestKey()){
-      n = next; v = stableVersion(n); next = n->next;
-    }
-    goto forward;
-  }else if(t == NOTFOUND){
-    return false;
-  }else if(t == VALUE){
-    n->lv[index].value = value;
-    return true;
-  }else if(t == LAYER){
-    root = lv.next_layer;
-    // advance k to next slice
-    k.next();
-    goto retry;
-  }else{ // t == UNSTABLE
-    goto forward;
-  }
-}
-
 static BorderNode *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
   root->version.is_root = true;
@@ -613,7 +574,12 @@ forward:
   return root;
 }
 
-static void remove(Key &key){
+static void remove(Node *root, Key &k){
+retry:
+  auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+forward:
+  if(v.deleted)
+    goto retry;
 
 }
 
