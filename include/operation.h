@@ -574,13 +574,202 @@ forward:
   return root;
 }
 
-static void remove(Node *root, Key &k){
+/**
+ * treeから該当するkey-valueを削除する。
+ * @param root
+ * @param k
+ * @param upper_layer rootをnext_layerとして持つnode
+ * @param upper_index rootをnext_layerとして持つnode中のindex
+ * @return 新しいroot
+ */
+static Node *remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index){
+  if(root == nullptr){
+    return nullptr;
+  }
+
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
 forward:
   if(v.deleted)
     goto retry;
+  auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
+  auto t = std::get<0>(t_lv_i);
+  auto lv = std::get<1>(t_lv_i);
+  auto index = std::get<2>(t_lv_i);
+  if((n->version ^ v) > Version::lock){
+    v = stableVersion(n); auto next = n->next;
+    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
+      n = next; v = stableVersion(n); next = n->next;
+    }
+    goto forward;
+  }else if(t == NOTFOUND){
+    // 何もしない?
+    // 何らかの形でユーザに通知を行うべきだろうか？
+    ;
+  }else if(t == VALUE){
+    /**
+     * 削除
+     * ここで、rootが新しくなる可能性は十分にある。
+     * まずborder nodeから消す
+     * border node内で左シフト
+     * 次にborder node内の個数を調べる
+     * border nodeにまだあるならそれで終わり
+     * border nodeが空になったら、parentとしてのinteriorの変更
+     *
+     * parentが残り二つ以上の時
+     *
+     * parentが一つの時
+     * - root 付近の時
+     * upper_layerからの繋ぎ直し、is_rootの更新
+     *
+     * - そうでない時
+     *
+     * 簡単化のため、「要素が一つだけあるBorderNode」という状況が発生しない
+     * ようにする。そうなる前に、必ずupper_layerのsuffixの中に戻してあげる。
+     *
+     * NOTE: どのケースにおいても、先に親としてのinteriorに先に
+     * ロックをかける必要がありそうだ
+     */
+    n->key_len[index] = 0;
+    n->key_slice[index] = 0;
+    auto suffix = n->key_suffixes.get(index);
+    if(suffix != nullptr){
+      n->key_suffixes.delete_ptr(index);
+    }
+    delete n->lv[index].value;
 
+    for(size_t i = index; i < Node::ORDER - 2; ++i){
+      n->key_len[i] = n->key_len[i+1];
+      n->key_slice[i] = n->key_slice[i+1];
+      n->key_suffixes.set(i, n->key_suffixes.get(i+1));
+      n->lv[i] = n->lv[i+1];
+    }
+    auto current_num_keys = n->numberOfKeys();
+
+    if(current_num_keys == 0){
+      auto p = n->parent;
+
+      if(p->n_keys >= 2){
+        // parent内でのnの位置を調べる
+        auto n_index = get_n_index(p, n);
+        if(n_index == 0){
+          for(size_t i = 0; i <= 13; ++i){
+            p->key_slice[i] = p->key_slice[i+1];
+          }
+          for(size_t i = 0; i <= 14; ++i){
+            p->child[i] = p->child[i+1];
+          }
+          --n->parent->n_keys;
+        }else{
+          for(size_t i = n_index; i <= 13; ++i){
+            p->key_slice[i] = p->key_slice[i+1];
+          }
+          for(size_t i = n_index; i <= 14; ++i){
+            p->child[i] = p->child[i+1];
+          }
+          --n->parent->n_keys;
+        }
+
+        // prevとnextを繋ぐ
+        if(n->next != nullptr){
+          n->next->prev = n->prev;
+        }
+        if(n->prev != nullptr){
+          n->prev->next = n->next;
+        }
+
+        delete n;
+
+      }else{
+        assert(p->n_keys == 1);
+        auto n_index = get_n_index(p, n);
+        auto pull_up_index = n_index == 1 ? 0 : 1;
+        assert(p->child[pull_up_index]->version.is_border);
+        auto pull_up_node = p->child[pull_up_index];
+        if(p->version.is_root){
+          auto pull_up_border_node = reinterpret_cast<BorderNode *>(pull_up_node);
+          if(upper_layer != nullptr){
+            upper_layer->lv[upper_index].next_layer = pull_up_node;
+            pull_up_node->version.is_root = true;
+
+            delete p;
+            delete n;
+
+            if(pull_up_border_node->numberOfKeys() == 1){
+              // 残っているkeyをsuffixとしてupper_layerに保存
+              BigSuffix *upper_suffix;
+              if(pull_up_border_node->key_len[0] == BorderNode::key_len_has_suffix){
+                auto old_suffix = pull_up_border_node->key_suffixes.get(0);
+                old_suffix->slices.insert(old_suffix->slices.begin(), pull_up_border_node->key_slice[0]);
+                upper_suffix = old_suffix;
+              }else{
+                assert(1 <= pull_up_border_node->key_len[0] and pull_up_border_node->key_len[0] <= 8);
+                upper_suffix = new BigSuffix({pull_up_border_node->key_slice[0]}, pull_up_border_node->key_len[0]);
+              }
+
+              upper_layer->key_len[upper_index] = BorderNode::key_len_has_suffix;
+              upper_layer->key_suffixes.set(upper_index, upper_suffix);
+              upper_layer->lv[upper_index].value = pull_up_border_node->lv[0].value;
+
+              delete pull_up_border_node;
+
+              return nullptr; // このlayerは消滅
+            }else{
+              // 新しいrootとして返される
+              return pull_up_node;
+            }
+          }else{
+            // layer 0においての処理
+            delete p;
+            delete n;
+
+            return pull_up_node;
+          }
+        }else{
+          auto p_index = get_n_index(p->parent, p);
+          p->parent->child[p_index] = pull_up_node;
+
+          // prevとnextを繋ぐ
+          if(n->next != nullptr){
+            n->next->prev = n->prev;
+          }
+          if(n->prev != nullptr){
+            n->prev->next = n->next;
+          }
+
+          delete p;
+          delete n;
+        }
+      }
+    }else if(current_num_keys == 1){
+      if(n->parent == nullptr and upper_layer != nullptr){
+        // 残っているkeyをsuffixとしてupper_layerに保存
+        BigSuffix *upper_suffix;
+        if(n->key_len[0] == BorderNode::key_len_has_suffix){
+          auto old_suffix = n->key_suffixes.get(0);
+          old_suffix->slices.insert(old_suffix->slices.begin(), n->key_slice[0]);
+          upper_suffix = old_suffix;
+        }else{
+          assert(1 <= n->key_len[0] and n->key_len[0] <= 8);
+          upper_suffix = new BigSuffix({n->key_slice[0]}, n->key_len[0]);
+        }
+
+        upper_layer->key_len[upper_index] = BorderNode::key_len_has_suffix;
+        upper_layer->key_suffixes.set(upper_index, upper_suffix);
+        upper_layer->lv[upper_index].value = n->lv[0].value;
+
+        delete n;
+      }
+    }
+  }else if(t == LAYER){
+    k.next();
+    remove(lv.next_layer, k, n, index);
+  }else{
+    assert(t == UNSTABLE);
+    goto forward;
+  }
+
+  return root;
 }
 
 }
