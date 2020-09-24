@@ -299,6 +299,8 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
     assert(new_slice > max_slice);
     return 15;
   }
+  // should not reach here.
+  assert(false);
 }
 
 /**
@@ -764,7 +766,10 @@ forward:
     auto current_num_keys = n->numberOfKeys();
 
     if(current_num_keys == 0){
-      return delete_border_node_in_remove(n, upper_layer, upper_index);
+      auto pair = delete_border_node_in_remove(n, upper_layer, upper_index);
+      if(pair.first != NotChange){
+        return pair;
+      }
     }else if(current_num_keys == 1){
       if(n->parent == nullptr and upper_layer != nullptr){
         handle_remove_layer_in_remove(n, upper_layer, upper_index);
