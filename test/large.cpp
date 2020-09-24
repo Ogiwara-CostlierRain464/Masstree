@@ -18,17 +18,38 @@ void make_key(Key &k){
   k.length = slices_len * 8;
 }
 
+static BorderNode *to_b(Node *n){
+  return reinterpret_cast<BorderNode *>(n);
+}
+
+static InteriorNode *to_i(Node *n){
+  return reinterpret_cast<InteriorNode *>(n);
+}
+
+
 TEST(LargeTest, layer0){
   Node *root = nullptr;
+  std::array<Key, 10000> inserted_keys{};
   for(size_t i = 0; i < 10000; ++i){
     Key k({},0);
     make_key(k);
     root = put_layer0(root, k, new int(9));
+
+    k.cursor = 0;
+    auto p = get(root, k);
+    ASSERT_TRUE(p != nullptr);
+    EXPECT_EQ(*reinterpret_cast<int *>(p), 9);
+
+    inserted_keys[i] = k;
   }
-  for(size_t i = 0; i < 10000; ++i){
-    Key k({},0);
-    make_key(k);
-    root = remove_at_layer0(root, k);
-  }
+//  for(size_t i = 0; i < 10000; ++i){
+//    Key k({},0);
+//    make_key(k);
+//    root = remove_at_layer0(root, k);
+//  }
+
+  // insert時のclearを忘れているのが原因
+  // remove時に、ちゃんとsuffix消してるか？？？
+  // 255のテスト足せ
 }
 

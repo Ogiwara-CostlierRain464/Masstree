@@ -237,8 +237,8 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
 
   // clean
   // 実は、InteriorNodeの場合はn_keysを0にするだけで十分
-//  std::fill(p->key_slice.begin(), p->key_slice.end(), 0);
-//  std::fill(p->child.begin(), p->child.end(), nullptr);
+  std::fill(p->key_slice.begin(), p->key_slice.end(), 0);
+  std::fill(p->child.begin(), p->child.end(), nullptr);
   p->n_keys = 0;
   size_t split = cut(Node::ORDER);
   size_t i, j;
@@ -463,7 +463,7 @@ static Node *split(Node *n, const Key &k, void *value){
   split_keys_among(
     reinterpret_cast<BorderNode *>(n),
     reinterpret_cast<BorderNode *>(n1), k, value);
-  ascend:
+ascend:
   InteriorNode *p = lockedParent(n);
   auto mostLeft = getMostLeftSlice(n1);
   if(p == nullptr){
@@ -605,7 +605,7 @@ static void handle_remove_layer_in_remove(BorderNode *n, BorderNode *upper_layer
     upper_suffix = old_suffix;
   }else if(n->key_len[0] == BorderNode::key_len_layer){
     // 何もしなくて良い
-    ;
+    return;
   }else{
     assert(1 <= n->key_len[0] and n->key_len[0] <= 8);
     upper_suffix = new BigSuffix({n->key_slice[0]}, n->key_len[0]);
