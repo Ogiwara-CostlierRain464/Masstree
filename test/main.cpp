@@ -13,15 +13,6 @@ void pop_front(std::vector<T> &v)
 }
 
 TEST_F(Unit, init){
-  vector<int> a = {1,2,3,4};
-  EXPECT_EQ(a.front(), 1);
-  pop_front(a);
-  EXPECT_EQ(a.front(), 2);
-  pop_front(a);
-  EXPECT_EQ(a.front(), 3);
-
-  a.insert(a.begin(), 0);
-  EXPECT_EQ(a.front(), 0);
 }
 
 int main(int argc, char **argv){

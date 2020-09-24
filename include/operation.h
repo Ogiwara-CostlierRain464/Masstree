@@ -661,6 +661,9 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
+        pull_up_node->version.is_root = true;
+        pull_up_node->parent = nullptr;
+
         if(pull_up_node->version.is_border){
           auto pull_up_border_node = reinterpret_cast<BorderNode *>(pull_up_node);
           if(pull_up_border_node->numberOfKeys() == 1){
@@ -670,8 +673,6 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         }
 
         upper_layer->lv[upper_index].next_layer = pull_up_node;
-        pull_up_node->version.is_root = true;
-        pull_up_node->parent = nullptr;
 
         n->connectPrevAndNext();
         delete p;

@@ -270,5 +270,137 @@ TEST(RemoveTest, middle2){
 //endregion
 
 //region root付近
+TEST(RemoveTest, new_root){
+  auto upper_node = new BorderNode;
+  size_t upper_index = 0;
+  auto a = new InteriorNode;
+  auto b = new BorderNode;
+  auto c = new InteriorNode;
+  auto d = new BorderNode;
+  auto e = new BorderNode;
+  auto f = new BorderNode;
 
+  upper_node->lv[upper_index].next_layer = a;
+  a->key_slice[0] = 25;
+  a->child[0] = b;
+  a->child[1] = c;
+  a->n_keys = 1;
+  a->version.is_root = true;
+  b->key_len[0] = 1;
+  b->key_slice[0] = 9;
+  c->key_slice[0] = 45;
+  c->key_slice[1] = 60;
+  c->child[0] = d;
+  c->child[1] = e;
+  c->child[2] = f;
+  c->n_keys = 2;
+  d->key_len[0] = 1;
+  d->key_slice[0] = 35;
+  e->key_len[0] = 1;
+  e->key_slice[0] = 55;
+  f->key_len[0] = 1;
+  f->key_slice[0] = 78;
+
+  f->parent = c;
+  f->prev = e;
+  e->parent = c;
+  e->next = f;
+  e->prev = d;
+  d->parent = c;
+  d->next = e;
+  d->prev = b;
+  b->parent = a;
+  b->next = d;
+  c->parent = a;
+  b->parent = a;
+
+  Key k({9}, 1);
+  auto pair = remove(a, k, upper_node, upper_index);
+  ASSERT_TRUE(upper_node->lv[upper_index].next_layer == c);
+  EXPECT_TRUE(c->parent == nullptr);
+  EXPECT_TRUE(c->version.is_root);
+  EXPECT_EQ(d->prev, nullptr);
+  // bがいつ解放されるだろうか
+}
+
+TEST(RemoveTest, remove_layer_1){
+  auto upper_b = new BorderNode;
+
+  // pull upしてきたBorderNodeのサイズが1の時
+  auto a = new InteriorNode;
+  auto b = new BorderNode;
+  auto c = new BorderNode;
+  a->key_slice[0] = 10;
+  a->child[0] = b;
+  a->child[1] = c;
+  a->n_keys = 1;
+  a->version.is_root = true;
+  b->key_len[0] = 1;
+  b->key_slice[0] = 9;
+  c->key_len[0] = 1;
+  c->key_slice[0] = 10;
+
+  c->parent = a;
+  c->prev = b;
+  b->parent = a;
+  b->next = c;
+
+  Key k({9}, 1);
+  auto pair = remove(a, k, upper_b, 0);
+  EXPECT_EQ(pair.first, LayerRemoved);
+}
+
+TEST(RemoveTest, remove_layer_2){
+  // rootのBorderNodeがサイズ1になった時
+  auto upper_b = new BorderNode;
+  auto b = new BorderNode;
+  b->key_len[0] = 1;
+  b->key_slice[0] = 9;
+  b->key_len[1] = 1;
+  b->key_slice[1] = 10;
+  b->version.is_root = true;
+
+  Key k({9}, 1);
+  auto pair = remove(b, k, upper_b, 0);
+  EXPECT_EQ(pair.first, LayerRemoved);
+}
+
+TEST(RemoveTest, at_layer0_1){
+  // pull upしてきたBorderNodeのサイズが1の時
+  auto a = new InteriorNode;
+  auto b = new BorderNode;
+  auto c = new BorderNode;
+  a->key_slice[0] = 10;
+  a->child[0] = b;
+  a->child[1] = c;
+  a->n_keys = 1;
+  a->version.is_root = true;
+  b->key_len[0] = 1;
+  b->key_slice[0] = 9;
+  c->key_len[0] = 1;
+  c->key_slice[0] = 10;
+
+  c->parent = a;
+  c->prev = b;
+  b->parent = a;
+  b->next = c;
+
+  Key k({9}, 1);
+  auto pair = remove(a, k, nullptr, 0);
+  EXPECT_EQ(pair.first, NewRoot);
+}
+
+TEST(RemoveTest, at_layer0_2){
+  // rootのBorderNodeがサイズ1になった時
+  auto b = new BorderNode;
+  b->key_len[0] = 1;
+  b->key_slice[0] = 9;
+  b->key_len[1] = 1;
+  b->key_slice[1] = 10;
+  b->version.is_root = true;
+
+  Key k({9}, 1);
+  auto pair = remove(b, k, nullptr, 0);
+  EXPECT_EQ(pair.first, NotChange);
+}
 //endregion
