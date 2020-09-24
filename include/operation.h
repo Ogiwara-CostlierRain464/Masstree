@@ -237,8 +237,8 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
 
   // clean
   // 実は、InteriorNodeの場合はn_keysを0にするだけで十分
-  //std::fill(p->key_slice, p->key_slice + Node::ORDER + 1, 0);
-  //std::fill(p->child, p->child + Node::ORDER, nullptr);
+//  std::fill(p->key_slice.begin(), p->key_slice.end(), 0);
+//  std::fill(p->child.begin(), p->child.end(), nullptr);
   p->n_keys = 0;
   size_t split = cut(Node::ORDER);
   size_t i, j;
@@ -575,6 +575,11 @@ forward:
   return root;
 }
 
+static Node *put_layer0(Node *root, Key &k, void *value){
+  return put(root, k, value, nullptr, 0);
+}
+
+
 enum RootChange : uint8_t {
   NotChange,
   NewRoot,
@@ -598,6 +603,9 @@ static void handle_remove_layer_in_remove(BorderNode *n, BorderNode *upper_layer
     old_suffix->slices.insert(old_suffix->slices.begin(), n->key_slice[0]);
     // suffixをそのまま再利用
     upper_suffix = old_suffix;
+  }else if(n->key_len[0] == BorderNode::key_len_layer){
+    // 何もしなくて良い
+    ;
   }else{
     assert(1 <= n->key_len[0] and n->key_len[0] <= 8);
     upper_suffix = new BigSuffix({n->key_slice[0]}, n->key_len[0]);

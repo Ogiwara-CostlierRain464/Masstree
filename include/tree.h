@@ -96,7 +96,9 @@ struct BigSuffix{
   BigSuffix(std::vector<KeySlice> &&slices_, size_t lastSliceSize_)
   : slices(std::move(slices_))
   , lastSliceSize(lastSliceSize_)
-  {}
+  {
+    assert(1 <= lastSliceSize and lastSliceSize <= 8);
+  }
 
   SliceWithSize getCurrentSlice() const{
     if(hasNext()){
@@ -177,7 +179,7 @@ struct KeySuffix{
   }
 
   void delete_ptr(size_t i){
-    BigSuffix *ptr = suffixes[i];
+    auto ptr = suffixes[i];
     delete ptr;
     suffixes[i] = nullptr;
   }
