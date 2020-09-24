@@ -7,13 +7,13 @@
 namespace masstree{
 
 static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
-  retry:
+retry:
   auto n = root; auto v = stableVersion(n);
 
   if(!v.is_root){
     root = root->parent; goto retry;
   }
-  descend:
+descend:
   if(n->version.is_border){
     return std::pair(reinterpret_cast<BorderNode *>(n), v);
   }
@@ -157,6 +157,8 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
  * @param value
  */
 static void insert_into_border(BorderNode *border, Key &key, void *value){
+  assert(border->isNotFull());
+
   size_t insertion_point = 0;
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
@@ -217,6 +219,8 @@ static size_t cut(size_t len){
  * @param n1
  */
 static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index){
+  assert(!p->isNotFull());
+
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};
 
@@ -311,6 +315,8 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
  * @param value
  */
 static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
+  assert(!n->isNotFull());
+
   uint8_t temp_key_len[Node::ORDER] = {};
   uint64_t temp_key_slice[Node::ORDER] = {};
   LinkOrValue temp_lv[Node::ORDER] = {};
@@ -416,6 +422,8 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
  * @param slice
  */
 static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
+  assert(p->isNotFull());
+
   // move to right
   for(size_t i = p->n_keys; i > n_index; --i){
     p->child[i + 1] = p->child[i];
