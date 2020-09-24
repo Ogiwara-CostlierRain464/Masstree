@@ -48,6 +48,15 @@ struct InteriorNode: Node{
     return child[n_keys];
   }
 
+  size_t findChildIndex(Node *a_child){
+    size_t index = 0;
+    while (index <= n_keys
+    && child[index] != a_child){
+      ++index;
+    }
+    return index;
+  }
+
   [[nodiscard]]
   bool isNotFull() const{
     return n_keys != ORDER - 1;
@@ -316,7 +325,7 @@ struct BorderNode: Node{
    * 有効なkeyの数
    * @return
    */
-  size_t numberOfKeys(){
+  size_t numberOfKeys() const{
     // key_lenが0 ⇒ その要素は空
     size_t result = 0;
     for(size_t i = 0; i < ORDER - 1; ++i){
@@ -331,6 +340,18 @@ struct BorderNode: Node{
 
   KeySlice lowestKey(){
     return key_slice[0];
+  }
+
+  /**
+   * このBorderNodeをdeleteする前に呼ばれる。
+   */
+  void connectPrevAndNext(){
+    if(next != nullptr){
+      next->prev = this->prev;
+    }
+    if(prev != nullptr){
+      prev->next = this->next;
+    }
   }
 
   void printNode(){
