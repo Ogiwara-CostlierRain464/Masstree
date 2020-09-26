@@ -30,7 +30,6 @@ descend:
   v = v2; goto descend;
 }
 
-
 static void *get(Node *root, Key &k){
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
@@ -174,8 +173,6 @@ static void insert_into_border(BorderNode *border, Key &key, void *value){
     border->lv[i] = border->lv[i - 1];
   }
 
-  // new treeの時と同じように、invariantを満たす
-  // まで、layerを作り続ける
   if(1 <= cursor.size and cursor.size <= 7){
     border->key_len[insertion_point] = cursor.size;
     border->key_slice[insertion_point] = cursor.slice;

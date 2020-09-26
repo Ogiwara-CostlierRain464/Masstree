@@ -364,6 +364,19 @@ TEST(BigSuffixTest, isSame){
 
 class KeyTest: public ::testing::Test{};
 
+TEST(KeyTest, remainLength){
+  Key k({
+    ONE,
+    TWO,
+    FIVE,
+    THREE,
+    FOUR,
+    AB
+  }, 42);
+
+  EXPECT_EQ(k.remainLength(3), 18);
+}
+
 TEST(KeyTest, equal){
   Key a({
     TWO,

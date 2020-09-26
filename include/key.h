@@ -44,7 +44,10 @@ struct Key {
   Key &operator=(const Key& other) = default;
 
   Key(std::vector<KeySlice> slices_, size_t len)
-    : slices(std::move(slices_)), length(len) {}
+    : slices(std::move(slices_)), length(len) {
+    assert((slices.size() - 1) * 8 <= length
+    and length <= slices.size() * 8);
+  }
 
   [[nodiscard]]
   bool hasNext() const {
@@ -52,6 +55,17 @@ struct Key {
       return false;
 
     return true;
+  }
+
+  /**
+   * Keyの残りの長さ
+   * @param from from以降のカーソルからの長さを返す
+   * @return
+   */
+  size_t remainLength(size_t from) const{
+    assert(from <= slices.size() - 1);
+
+    return length - from * 8;
   }
 
   size_t lastSliceSize() const{

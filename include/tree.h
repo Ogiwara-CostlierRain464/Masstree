@@ -108,6 +108,10 @@ struct BigSuffix{
     }
   }
 
+  size_t remainLength(){
+    return (slices.size() - 1) * 8 + lastSliceSize;
+  }
+
   bool hasNext() const{
     return slices.size() >= 2;
   }
@@ -124,14 +128,17 @@ struct BigSuffix{
    * @return
    */
   bool isSame(const Key &key, size_t from){
+    // keyのサイズと、suffixのサイズの比較
+    if(key.remainLength(from) != this->remainLength()){
+      return false;
+    }
+
     for(size_t i = 0; i < slices.size(); ++i){
       if(key.slices[i + from] != slices[i]){
         return false;
       }
     }
-    if(key.lastSliceSize() != lastSliceSize){
-      return false;
-    }
+
     return true;
   }
 
