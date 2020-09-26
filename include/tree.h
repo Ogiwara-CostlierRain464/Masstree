@@ -25,6 +25,16 @@ struct Node{
   static constexpr size_t ORDER = 16;
   /* alignas(?) */ Version version = {};
   InteriorNode *parent = nullptr;
+
+//  BorderNode *b(){
+//    assert(version.is_border);
+//    return reinterpret_cast<BorderNode *>(this);
+//  }
+//
+//  InteriorNode *i(){
+//    assert(!version.is_border);
+//    return reinterpret_cast<InteriorNode *>(this);
+//  }
 };
 
 struct InteriorNode: Node{
@@ -119,6 +129,14 @@ struct BigSuffix{
   void next(){
     assert(hasNext());
     pop_front(slices);
+  }
+
+  /**
+   * Stackとしてのslicesのトップに要素を乗っける
+   * @param slice
+   */
+  void insertTop(KeySlice slice){
+    slices.insert(slices.begin(), slice);
   }
 
   /**

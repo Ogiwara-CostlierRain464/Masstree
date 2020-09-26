@@ -94,6 +94,15 @@ struct Key {
     ++cursor;
   }
 
+  void back(){
+    assert(cursor != 0);
+    --cursor;
+  }
+
+  void reset(){
+    cursor = 0;
+  }
+
   bool operator==(const Key &rhs) const{
     return length == rhs.length
     && cursor == rhs.cursor

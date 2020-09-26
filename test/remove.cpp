@@ -347,7 +347,8 @@ TEST(RemoveTest, remove_layer_1){
 
   Key k({9}, 1);
   auto pair = remove(a, k, upper_b, 0);
-  EXPECT_EQ(pair.first, LayerRemoved);
+  EXPECT_EQ(pair.first, NewRoot);
+  EXPECT_TRUE(pair.second == c);
 }
 
 TEST(RemoveTest, remove_layer_2){
@@ -362,11 +363,80 @@ TEST(RemoveTest, remove_layer_2){
 
   Key k({9}, 1);
   auto pair = remove(b, k, upper_b, 0);
-  EXPECT_EQ(pair.first, LayerRemoved);
+  EXPECT_EQ(pair.first, NotChange);
 }
 
-TEST(RemoveTest, non_remove_layer){
+TEST(RemoveTest, remove_all_layer){
+  auto a = new BorderNode;
+  auto b = new BorderNode;
+  auto c = new BorderNode;
+  auto d = new BorderNode;
 
+  a->key_len[0] = BorderNode::key_len_layer;
+  a->key_slice[0] = ONE;
+  a->version.is_root = true;
+  a->lv[0].next_layer = b;
+
+  b->key_len[0] = BorderNode::key_len_layer;
+  b->key_slice[0] = TWO;
+  b->version.is_root = true;
+  b->lv[0].next_layer = c;
+
+  c->key_len[0] = BorderNode::key_len_layer;
+  c->key_slice[0] = THREE;
+  c->version.is_root = true;
+  c->lv[0].next_layer = d;
+
+  d->key_len[0] = 8;
+  d->key_slice[0] = FOUR;
+  d->version.is_root = true;
+  d->lv[0].value = new int(9);
+
+  Key k({
+    ONE,TWO,THREE,FOUR
+  }, 32);
+
+  auto pair = remove(a, k, nullptr, 0);
+  EXPECT_EQ(pair.first, LayerDeleted);
+}
+
+
+TEST(RemoveTest, remove_all_layer2){
+  auto a = new BorderNode;
+  auto b = new BorderNode;
+  auto c = new BorderNode;
+  auto d = new BorderNode;
+
+  a->key_len[0] = BorderNode::key_len_layer;
+  a->key_slice[0] = ONE;
+  a->version.is_root = true;
+  a->lv[0].next_layer = b;
+
+  b->key_len[0] = BorderNode::key_len_layer;
+  b->key_slice[0] = TWO;
+  b->version.is_root = true;
+  b->lv[0].next_layer = c;
+
+  c->version.is_root = true;
+  c->key_len[0] = BorderNode::key_len_layer;
+  c->key_slice[0] = THREE;
+  c->lv[0].next_layer = d;
+  c->key_len[1] = 8;
+  c->key_slice[1] = FIVE;
+  c->lv[1].value = new int(8);
+
+  d->key_len[0] = 8;
+  d->key_slice[0] = FOUR;
+  d->version.is_root = true;
+  d->lv[0].value = new int(9);
+
+  Key k({
+    ONE,TWO,THREE,FOUR
+  }, 32);
+
+  auto pair = remove(a, k, nullptr, 0);
+  EXPECT_EQ(pair.first, NotChange);
+  EXPECT_EQ(c->key_slice[0], FIVE);
 }
 
 TEST(RemoveTest, at_layer0_1){

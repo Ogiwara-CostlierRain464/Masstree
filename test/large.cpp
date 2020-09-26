@@ -35,7 +35,7 @@ TEST(LargeTest, layer0){
   for(size_t i = 0; i < 10000; ++i){
     auto k = new Key;
     make_key(k);
-    root = put_layer0(root, *k, new int(9));
+    root = put_at_layer0(root, *k, new int(9));
 
     k->cursor = 0;
     inserted_keys[i] = k;

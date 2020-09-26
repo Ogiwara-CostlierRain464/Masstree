@@ -572,7 +572,7 @@ forward:
   return root;
 }
 
-static Node *put_layer0(Node *root, Key &k, void *value){
+static Node *put_at_layer0(Node *root, Key &k, void *value){
   return put(root, k, value, nullptr, 0);
 }
 
@@ -580,15 +580,10 @@ static Node *put_layer0(Node *root, Key &k, void *value){
 enum RootChange : uint8_t {
   NotChange,
   NewRoot,
-  LayerRemoved
+  LayerDeleted
 };
 
-/**
- * removeの処理で、「numKeysが1のBorderNodeがrootにある」
- * という状況を避けるための処理
- * Layer0ではこれは呼び出されない事に注意。
- */
-static void handle_remove_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
+static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
   assert(n->parent == nullptr);
   assert(n->numberOfKeys() == 1);
   assert(n->version.is_root);
@@ -597,23 +592,23 @@ static void handle_remove_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   BigSuffix *upper_suffix;
   if(n->key_len[0] == BorderNode::key_len_has_suffix){
     auto old_suffix = n->key_suffixes.get(0);
-    old_suffix->slices.insert(old_suffix->slices.begin(), n->key_slice[0]);
+    old_suffix->insertTop(n->key_slice[0]);
     // suffixをそのまま再利用
     upper_suffix = old_suffix;
-  }else if(n->key_len[0] == BorderNode::key_len_layer){
-    // 何もしなくて良い
-    return;
   }else{
+    // Key TerminalとなるBorderに対する処理なので、BorderNode::key_len_layerにはなりえない。
     assert(1 <= n->key_len[0] and n->key_len[0] <= 8);
     upper_suffix = new BigSuffix({n->key_slice[0]}, n->key_len[0]);
   }
 
   upper_layer->key_len[upper_index] = BorderNode::key_len_has_suffix;
+  assert(upper_layer->key_suffixes.get(upper_index) == nullptr);
   upper_layer->key_suffixes.set(upper_index, upper_suffix);
   upper_layer->lv[upper_index].value = n->lv[0].value;
 
   delete n;
 }
+
 
 /**
  * removeの処理で、Borderがdeleteされ、parentの配置が変わる時の
@@ -630,7 +625,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     // Layer 0以外ではここには到達しない
     assert(n->parent == nullptr);
     assert(upper_layer == nullptr);
-    return std::make_pair(LayerRemoved, nullptr);
+    return std::make_pair(LayerDeleted, nullptr);
   }
 
   auto p = n->parent;
@@ -676,15 +671,6 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         // upper layerの更新
         pull_up_node->version.is_root = true;
         pull_up_node->parent = nullptr;
-
-        if(pull_up_node->version.is_border){
-          auto pull_up_border_node = reinterpret_cast<BorderNode *>(pull_up_node);
-          if(pull_up_border_node->numberOfKeys() == 1){
-            handle_remove_layer_in_remove(pull_up_border_node, upper_layer, upper_index);
-            return std::make_pair(LayerRemoved, nullptr);
-          }
-        }
-
         upper_layer->lv[upper_index].next_layer = pull_up_node;
 
         n->connectPrevAndNext();
@@ -717,6 +703,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
  */
 static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index){
   if(root == nullptr){
+    // Layer0以外では起きえない
+    assert(upper_layer == nullptr);
     return std::make_pair(NotChange, nullptr);
   }
 
@@ -742,27 +730,37 @@ forward:
   }else if(t == VALUE){
     /**
      * 削除
-     * ここで、rootが新しくなる可能性がある。
+     *
+     * 要素が一個しかないBorderNodeがrootならそのLayerは消えて、
+     * 上のLayerのsuffixにセットする。
+     * そして、上のLayerからそのKeyのremoveをやり直す。(そのLayerのrootから)
+     *
+     * そうでないなら、
      * まずborder nodeから消す
      * border node内で左シフト
      * 次にborder node内の個数を調べる
      * border nodeにまだあるならそれで終わり
-     * border nodeが空になったら、parentとしてのinteriorの変更
+
+     * border nodeが空になるなら、parentとしてのinteriorの変更が発生
      *
      * parentが残り二つ以上の時
+     * 左シフト
      *
      * parentが一つの時
      * - root 付近の時
      * upper_layerからの繋ぎ直し、is_rootの更新
      *
      * - そうでない時
-     *
-     * 簡単化のため、「要素が一つだけあるBorderNode」という状況が発生しない
-     * ようにする。そうなる前に、必ずupper_layerのsuffixの中に戻してあげる。
+     * grand parentからリンクを伸ばす
      *
      * NOTE: どのケースにおいても、先に親としてのinteriorに先に
      * ロックをかける必要がありそうだ
      */
+    if(n->version.is_root and n->numberOfKeys() == 1 and upper_layer != nullptr){
+      handle_delete_layer_in_remove(n, upper_layer, upper_index);
+      return std::make_pair(LayerDeleted, nullptr);
+    }
+
     n->key_len[index] = 0;
     n->key_slice[index] = 0;
     auto suffix = n->key_suffixes.get(index);
@@ -784,15 +782,14 @@ forward:
       if(pair.first != NotChange){
         return pair;
       }
-    }else if(current_num_keys == 1){
-      if(n->parent == nullptr and upper_layer != nullptr){
-        handle_remove_layer_in_remove(n, upper_layer, upper_index);
-        return std::make_pair(LayerRemoved, nullptr);
-      }
     }
   }else if(t == LAYER){
     k.next();
-    remove(lv.next_layer, k, n, index);
+    auto pair = remove(lv.next_layer, k, n, index);
+    if(pair.first == LayerDeleted){
+      k.back();
+      goto retry;
+    }
   }else{
     assert(t == UNSTABLE);
     goto forward;

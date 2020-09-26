@@ -63,3 +63,18 @@ TEST(BigSuffixTest, isSame){
 
   EXPECT_FALSE(suffix1.isSame(k1, 0));
 }
+
+TEST(BigSuffixTest, insertTop){
+  BigSuffix a({
+    ONE,
+    TWO
+  }, 8);
+
+  a.insertTop(THREE);
+  EXPECT_EQ(a.getCurrentSlice().slice, THREE);
+  a.next();
+  EXPECT_EQ(a.getCurrentSlice().slice, ONE);
+  a.next();
+  EXPECT_EQ(a.getCurrentSlice().slice, TWO);
+
+}

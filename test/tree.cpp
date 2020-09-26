@@ -267,36 +267,28 @@ TEST(TreeTest, duplex){
   EXPECT_EQ(*reinterpret_cast<int *>(p), 6);
 }
 
-TEST(TreeTest, hard){
+TEST(TreeTest, layer_change){
   Node *root = nullptr;
-  bool if_three = false;
-  for(size_t i = 0; i < 4000; ++i){
-    std::vector<KeySlice> slices{};
-    size_t j;
-    size_t r = rand() % 100;
-    if(r == 3)
-      if_three = true;
+  Key k1({
+    ONE, TWO, FIVE
+  }, 24);
+  root = put_at_layer0(root, k1, new int(5));
+  Key k2({
+    ONE, TWO, THREE, FOUR
+  }, 32);
+  root = put_at_layer0(root, k2, new int(4));
 
-    for(j = 1; j <= r; ++j){
-      slices.push_back(TWO);
-    }
-    slices.push_back(AB);
+  k1.reset();
+  auto p = get(root, k1);
+  ASSERT_EQ(*reinterpret_cast<int *>(p), 5);
 
-    Key k(slices, (slices.size() -1) * 8 + 2);
-    root = put(root, k, new int(i), nullptr, 0);
-  }
+  k2.reset();
+  root = remove_at_layer0(root, k2);
 
-  Key k({TWO, TWO, TWO, AB}, 26);
-  auto p = get(root, k);
-  EXPECT_TRUE(p != nullptr);
-
-  print_sub_tree(root);
-
-  // 現在は、「keyはunique」という前提は置かれているが、「key sliceはunique」という前提が
-  // 破綻している。interior nodeには同じkey sliceが現れないようにしなければならない。
-  // 今度は、重複するkeyを先に見つけられていない。
+  k1.reset();
+  auto p2 = get(root, k1);
+  ASSERT_EQ(*reinterpret_cast<int *>(p2), 5);
 }
-
 
 
 
