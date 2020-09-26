@@ -365,6 +365,10 @@ TEST(RemoveTest, remove_layer_2){
   EXPECT_EQ(pair.first, LayerRemoved);
 }
 
+TEST(RemoveTest, non_remove_layer){
+
+}
+
 TEST(RemoveTest, at_layer0_1){
   // pull upしてきたBorderNodeのサイズが1の時
   auto a = new InteriorNode;

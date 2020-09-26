@@ -53,12 +53,11 @@ TEST(LargeTest, layer0){
 //    root = remove_at_layer0(root, *k);
 //  }
 
-  // remainの時に、fromを指定できるように！
   // ポインタが4444とかになってる、つまり、何かが原因でkey_sliceの中のデータが流れてきてる！
   // 他のケースでは、途中のkey_lenが0になってる！　これはremoveかinsertの時に間をつめるのを忘れている！
   // n_keysのassertで防げそう
 
-  // insert時のclearを忘れているのが原因
+  // insert時のclearを忘れているのが原因?
   // remove時に、ちゃんとsuffix消してるか？？？
   // 255のテスト足せ
 }
