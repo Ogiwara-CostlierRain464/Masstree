@@ -761,12 +761,17 @@ forward:
       return std::make_pair(LayerDeleted, nullptr);
     }
 
-    n->key_len[index] = 0;
-    n->key_slice[index] = 0;
     auto suffix = n->key_suffixes.get(index);
-    if(suffix != nullptr){
+    if(suffix != nullptr
+    and n->key_len[index] == BorderNode::key_len_has_suffix){
+      // assert(n->key_len[index] == BorderNode::key_len_has_suffix);
+      // 何かが原因で、suffixのクリアに失敗している
       n->key_suffixes.delete_ptr(index);
     }
+
+    n->key_len[index] = 0;
+    n->key_slice[index] = 0;
+
     delete n->lv[index].value;
 
     for(size_t i = index; i < Node::ORDER - 2; ++i){ // i=0~13
