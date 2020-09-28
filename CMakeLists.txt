@@ -13,8 +13,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_link_options(-lpthread)
 
-file(GLOB_RECURSE PROJECT_SOURCES *.cpp)
-file(GLOB_RECURSE PROJECT_HEADERS *.h)
+file(GLOB_RECURSE PROJECT_SOURCES include/*.cpp)
+file(GLOB_RECURSE PROJECT_HEADERS include/*.h)
 
 add_executable(${PROJECT_NAME}
         ${PROJECT_SOURCES}
@@ -62,6 +62,7 @@ file(GLOB_RECURSE TEST_HEADERS test/*.h)
 add_executable(tests
         ${TEST_SOURCES}
         ${TEST_HEADERS}
+        include/alloc.cpp
 )
 target_link_libraries(tests gtest_main)
 add_test(NAME example_test COMMAND tests)

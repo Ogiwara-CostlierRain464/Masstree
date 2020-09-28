@@ -2,12 +2,16 @@
 #define MASSTREE_PUT_H
 
 #include "tree.h"
+#include "alloc.h"
 #include <algorithm>
 
 namespace masstree{
 
 static BorderNode *start_new_tree(const Key &key, void *value){
   auto root = new BorderNode;
+#ifndef NDEBUG
+  Alloc::incBorder();
+#endif
   root->version.is_root = true;
 
   auto cursor = key.getCurrentSlice();
@@ -68,9 +72,15 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
     */
     lock(border);
     auto n1 = new BorderNode;
+#ifndef NDEBUG
+    Alloc::incBorder();
+#endif
     n1->version.is_root = true;
     auto k2_val = border->lv[old_index].value;
     auto k2_suffix_copy = new BigSuffix(*border->key_suffixes.get(old_index));
+#ifndef NDEBUG
+    Alloc::incSuffix();
+#endif
     if(k2_suffix_copy->hasNext()){
       n1->key_len[0] = BorderNode::key_len_has_suffix;
       n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
@@ -82,6 +92,9 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
       n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
       n1->lv[0].value = k2_val;
       delete k2_suffix_copy;
+#ifndef NDEBUG
+      Alloc::decSuffix();
+#endif
     }
 
     border->key_len[old_index] = BorderNode::key_len_layer;
@@ -364,7 +377,10 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
  */
 static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
   auto root = new InteriorNode;
-  root->version.is_root = true;
+#ifndef NDEBUG
+    Alloc::incInterior();
+#endif
+    root->version.is_root = true;
   root->n_keys = 1;
   root->key_slice[0] = slice;
   root->child[0] = left;
@@ -415,7 +431,10 @@ static Node *split(Node *n, const Key &k, void *value){
   // precondition: n locked.
   assert(n->version.locked);
   Node *n1 = new BorderNode;
-  // splitする時点で、nはrootにはなり得ない
+#ifndef NDEBUG
+    Alloc::incBorder();
+#endif
+    // splitする時点で、nはrootにはなり得ない
   n->version.is_root = false;
   n->version.splitting = true;
   // n1 is initially locked
@@ -449,6 +468,9 @@ static Node *split(Node *n, const Key &k, void *value){
     unlock(n);
     std::atomic_thread_fence(std::memory_order_acq_rel);
     Node *p1 = new InteriorNode;
+#ifndef NDEBUG
+    Alloc::incInterior();
+#endif
     p1->version = p->version;
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),

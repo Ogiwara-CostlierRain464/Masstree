@@ -2,6 +2,7 @@
 #define MASSTREE_REMOVE_H
 
 #include "tree.h"
+#include "alloc.h"
 #include <algorithm>
 
 
@@ -30,6 +31,9 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
     // Key TerminalとなるBorderに対する処理なので、BorderNode::key_len_layerにはなりえない。
     assert(1 <= n->key_len[0] and n->key_len[0] <= 8);
     upper_suffix = new BigSuffix({n->key_slice[0]}, n->key_len[0]);
+#ifndef NDEBUG
+    Alloc::incSuffix();
+#endif
   }
 
   upper_layer->key_len[upper_index] = BorderNode::key_len_has_suffix;
@@ -37,6 +41,9 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   upper_layer->key_suffixes.set(upper_index, upper_suffix);
   upper_layer->lv[upper_index].value = n->lv[0].value;
 
+#ifndef NDEBUG
+  Alloc::decBorder();
+#endif
   delete n;
 }
 
@@ -83,6 +90,9 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
 
     n->connectPrevAndNext();
     delete n;
+#ifndef NDEBUG
+    Alloc::decBorder();
+#endif
     // rootの変更無し
   }else{
     assert(p->n_keys == 1);
@@ -98,6 +108,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         n->connectPrevAndNext();
         delete p;
         delete n;
+#ifndef NDEBUG
+        Alloc::decInterior();
+        Alloc::decBorder();
+#endif
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
@@ -108,6 +122,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         n->connectPrevAndNext();
         delete p;
         delete n;
+#ifndef NDEBUG
+        Alloc::decInterior();
+        Alloc::decBorder();
+#endif
         return std::make_pair(NewRoot, pull_up_node);
       }
     }else{
@@ -119,6 +137,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       n->connectPrevAndNext();
       delete p;
       delete n;
+#ifndef NDEBUG
+      Alloc::decInterior();
+      Alloc::decBorder();
+#endif
     }
   }
 

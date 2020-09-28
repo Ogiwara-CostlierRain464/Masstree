@@ -4,6 +4,7 @@
 #include "../include/put.h"
 #include "../include/get.h"
 #include "../include/remove.h"
+#include "../include/alloc.h"
 
 using namespace masstree;
 
@@ -29,11 +30,11 @@ static InteriorNode *to_i(Node *n){
 }
 
 
-TEST(LargeTest, DISABLED_layer0){
+TEST(LargeTest, layer0){
   auto seed = time(0);
   srand(seed);
 
-  constexpr size_t COUNT = 1000000;
+  constexpr size_t COUNT = 10000;
 
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
@@ -57,6 +58,8 @@ TEST(LargeTest, DISABLED_layer0){
     auto k = inserted_keys[i];
     root = remove_at_layer0(root, *k);
   }
+
+  Alloc::print();
 
   // ポインタが4444とかになってる、つまり、何かが原因でkey_sliceの中のデータが流れてきてる！
   // 他のケースでは、途中のkey_lenが0になってる！　これはremoveかinsertの時に間をつめるのを忘れている！

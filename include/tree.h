@@ -15,6 +15,7 @@
 #include "version.h"
 #include "key.h"
 #include "permutation.h"
+#include "alloc.h"
 
 namespace masstree{
 
@@ -165,6 +166,9 @@ struct BigSuffix{
     for(size_t j = from; j < key.slices.size(); ++j){
       tmp.push_back(key.slices[j]);
     }
+#ifndef NDEBUG
+    Alloc::incSuffix();
+#endif
     return new BigSuffix(std::move(tmp), key.lastSliceSize());
   }
 };
@@ -206,6 +210,9 @@ struct KeySuffix{
   void delete_ptr(size_t i){
     auto ptr = suffixes[i];
     delete ptr;
+#ifndef NDEBUG
+    Alloc::decSuffix();
+#endif
     suffixes[i] = nullptr;
   }
 
