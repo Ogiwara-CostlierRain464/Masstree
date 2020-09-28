@@ -387,7 +387,7 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
   ++p->n_keys;
 }
 
-static KeySlice getMostLeftSlice(Node *n){
+static KeySlice get_most_left_slice(Node *n){
   if(n->version.is_border){
     auto border = reinterpret_cast<BorderNode*>(n);
     return border->key_slice[0];
@@ -418,7 +418,7 @@ static Node *split(Node *n, const Key &k, void *value){
     reinterpret_cast<BorderNode *>(n1), k, value);
   ascend:
   InteriorNode *p = lockedParent(n);
-  auto mostLeft = getMostLeftSlice(n1);
+  auto mostLeft = get_most_left_slice(n1);
   if(p == nullptr){
     p = create_root_with_children(n, mostLeft, n1);
     unlock(n);
