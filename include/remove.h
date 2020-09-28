@@ -193,6 +193,7 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
       return std::make_pair(LayerDeleted, nullptr);
     }
 
+    auto n_num_keys = n->numberOfKeys();
     auto suffix = n->key_suffixes.get(index);
     if(suffix != nullptr){
       assert(n->key_len[index] == BorderNode::key_len_has_suffix);
@@ -205,12 +206,18 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
 
     delete n->lv[index].value;
 
-    for(size_t i = index; i < Node::ORDER - 2; ++i){ // i=0~13
+    for(size_t i = index; i <= n_num_keys - 1; ++i){ // i=0~13 左シフト
       n->key_len[i] = n->key_len[i+1];
       n->key_slice[i] = n->key_slice[i+1];
       n->key_suffixes.set(i, n->key_suffixes.get(i+1));
       n->lv[i] = n->lv[i+1];
     }
+    n->key_len[n_num_keys-1] = 0;
+    n->key_slice[n_num_keys-1] = 0;
+    n->key_suffixes.set(n_num_keys-1, nullptr);
+    n->lv[n_num_keys-1] = LinkOrValue{};
+
+
     auto current_num_keys = n->numberOfKeys();
 
     if(current_num_keys == 0){
