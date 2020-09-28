@@ -117,12 +117,18 @@ static void insert_into_border(BorderNode *border, Key &key, void *value){
     ++insertion_point;
   }
 
-  for(size_t i = num_keys; i > insertion_point; --i){
+  for(size_t i = num_keys; i > insertion_point; --i){ // 右シフト
     border->key_len[i] = border->key_len[i - 1];
     border->key_slice[i] = border->key_slice[i - 1];
     border->key_suffixes.set(i, border->key_suffixes.get(i - 1));
     border->lv[i] = border->lv[i - 1];
   }
+
+  // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
+  border->key_len[insertion_point] = 0;
+  border->key_slice[insertion_point] = 0;
+  border->key_suffixes.set(insertion_point, nullptr);
+  border->lv[insertion_point] = LinkOrValue{};
 
   if(1 <= cursor.size and cursor.size <= 7){
     border->key_len[insertion_point] = cursor.size;
@@ -141,6 +147,7 @@ static void insert_into_border(BorderNode *border, Key &key, void *value){
       border->key_len[insertion_point] = 8;
       border->key_slice[insertion_point] = cursor.slice;
       border->lv[insertion_point].value = value;
+      // ここでクリアし忘れてる！〜
     }
   }
 }

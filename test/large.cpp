@@ -9,12 +9,12 @@ using namespace masstree;
 
 class LargeTest: public ::testing::Test{};
 
-KeySlice arr[] = {ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, AB, CD};
+KeySlice arr[] = {ONE, TWO, THREE, FOUR, FIVE};
 
 void make_key(Key *k){
   size_t slices_len = (rand() % 100)+1;
   for(size_t i = 1; i <= slices_len; ++i){
-    auto slice = arr[rand() % 11];
+    auto slice = arr[rand() % 5];
     k->slices.push_back(slice);
   }
   k->length = slices_len * 8;
@@ -29,10 +29,11 @@ static InteriorNode *to_i(Node *n){
 }
 
 
-TEST(LargeTest, DISABLED_layer0){
-  srand(time(0));
+TEST(LargeTest, layer0){
+  auto seed = 1601289517;
+  srand(seed);
 
-  constexpr size_t COUNT = 1000000;
+  constexpr size_t COUNT = 10000;
 
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
@@ -43,6 +44,13 @@ TEST(LargeTest, DISABLED_layer0){
 
     k->reset();
     inserted_keys[i] = k;
+
+    if(i == 85){
+      EXPECT_TRUE(true);
+    }
+    if(i == 86){
+      EXPECT_TRUE(true);
+    }
   }
 
   for(int i = COUNT - 1; i >= 0; --i){
@@ -52,7 +60,7 @@ TEST(LargeTest, DISABLED_layer0){
     k->reset();
   }
 
-  for(size_t i = 0; i < COUNT - 1; ++i){
+  for(size_t i = 0; i < COUNT; ++i){
     auto k = inserted_keys[i];
     root = remove_at_layer0(root, *k);
   }
