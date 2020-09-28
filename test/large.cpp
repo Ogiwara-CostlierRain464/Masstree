@@ -34,7 +34,7 @@ TEST(LargeTest, layer0){
   auto seed = time(0);
   srand(seed);
 
-  constexpr size_t COUNT = 10000;
+  constexpr size_t COUNT = 1000000;
 
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};

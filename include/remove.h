@@ -64,6 +64,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     // Layer 0以外ではここには到達しない
     assert(n->parent == nullptr);
     assert(upper_layer == nullptr);
+    delete n;
+#ifndef NDEBUG
+    Alloc::decBorder();
+#endif
     return std::make_pair(LayerDeleted, nullptr);
   }
 

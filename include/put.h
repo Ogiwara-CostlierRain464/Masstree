@@ -160,7 +160,6 @@ static void insert_into_border(BorderNode *border, Key &key, void *value){
       border->key_len[insertion_point] = 8;
       border->key_slice[insertion_point] = cursor.slice;
       border->lv[insertion_point].value = value;
-      // ここでクリアし忘れてる！〜
     }
   }
 }
