@@ -442,6 +442,41 @@ static InteriorNode *lockedParent(Node *n){
   return p;
 }
 
+static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
+  retry:
+  auto n = root; auto v = stableVersion(n);
+
+  if(!v.is_root){
+    root = root->parent; goto retry;
+  }
+  descend:
+  if(n->version.is_border){
+    return std::pair(reinterpret_cast<BorderNode *>(n), v);
+  }
+  auto interior_n = reinterpret_cast<InteriorNode *>(n);
+  auto n1 = interior_n->findChild(key.getCurrentSlice().slice);
+  Version v1 = stableVersion(n1);
+  if((n->version ^ v) <= Version::lock){
+    n = n1; v = v1; goto descend;
+  }
+  auto v2 = stableVersion(n);
+  if(v2.v_split != v.v_split){
+    goto retry;
+  }
+  v = v2; goto descend;
+}
+
+
+static void print_sub_tree(Node *root){
+  if(root->version.is_border){
+    auto border = reinterpret_cast<BorderNode *>(root);
+    border->printNode();
+  }else{
+    auto interior = reinterpret_cast<InteriorNode *>(root);
+    interior->printNode();
+  }
+}
+
 }
 
 #endif //MASSTREE_TREE_H

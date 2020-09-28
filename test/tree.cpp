@@ -3,7 +3,9 @@
 #include "../include/key.h"
 #include "../include/tree.h"
 #include "sample.h"
-#include "../include/operation.h"
+#include "../include/put.h"
+#include "../include/get.h"
+#include "../include/remove.h"
 
 using namespace masstree;
 

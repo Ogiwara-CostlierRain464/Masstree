@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <random>
-#include "../include/operation.h"
 #include "sample.h"
+#include "../include/put.h"
+#include "../include/get.h"
+#include "../include/remove.h"
 
 using namespace masstree;
 
@@ -27,7 +29,7 @@ static InteriorNode *to_i(Node *n){
 }
 
 
-TEST(LargeTest, layer0){
+TEST(LargeTest, DISABLED_layer0){
   srand(time(0));
 
   constexpr size_t COUNT = 1000000;

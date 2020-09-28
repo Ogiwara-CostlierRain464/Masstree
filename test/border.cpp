@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include "../include/operation.h"
 #include "sample.h"
 
 using namespace masstree;
