@@ -29,7 +29,7 @@ static InteriorNode *to_i(Node *n){
 }
 
 
-TEST(LargeTest, layer0){
+TEST(LargeTest, DISABLED_layer0){
   auto seed = time(0);
   srand(seed);
 
