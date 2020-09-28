@@ -10,7 +10,7 @@ class LargeTest: public ::testing::Test{};
 KeySlice arr[] = {ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, AB, CD};
 
 void make_key(Key *k){
-  size_t slices_len = (rand() % 100)+100000;
+  size_t slices_len = (rand() % 100)+1;
   for(size_t i = 1; i <= slices_len; ++i){
     auto slice = arr[rand() % 11];
     k->slices.push_back(slice);
@@ -30,7 +30,7 @@ static InteriorNode *to_i(Node *n){
 TEST(LargeTest, layer0){
   srand(time(0));
 
-  constexpr size_t COUNT = 50;
+  constexpr size_t COUNT = 1000000;
 
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};

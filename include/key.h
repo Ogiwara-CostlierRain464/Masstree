@@ -40,8 +40,10 @@ struct Key {
   size_t cursor = 0;
 
   Key() = default;
+  Key(Key&& other) = default;
   Key(const Key& other) = default;
   Key &operator=(const Key& other) = default;
+  Key &operator=(Key&& other) = default;
 
   Key(std::vector<KeySlice> slices_, size_t len)
     : slices(std::move(slices_)), length(len) {

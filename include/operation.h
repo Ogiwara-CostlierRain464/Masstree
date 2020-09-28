@@ -762,9 +762,8 @@ forward:
     }
 
     auto suffix = n->key_suffixes.get(index);
-    if(suffix != nullptr
-    and n->key_len[index] == BorderNode::key_len_has_suffix){
-      // assert(n->key_len[index] == BorderNode::key_len_has_suffix);
+    if(suffix != nullptr){
+      assert(n->key_len[index] == BorderNode::key_len_has_suffix);
       // 何かが原因で、suffixのクリアに失敗している
       n->key_suffixes.delete_ptr(index);
     }
