@@ -34,8 +34,9 @@ TEST(LargeTest, layer0){
   auto seed = time(0);
   srand(seed);
 
-  constexpr size_t COUNT = 1000000;
+  constexpr size_t COUNT = 10000;
 
+for(size_t mm = 0; mm < COUNT; ++mm){
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
   for(size_t i = 0; i < COUNT; ++i){
@@ -57,9 +58,14 @@ TEST(LargeTest, layer0){
   for(size_t i = 0; i < COUNT; ++i){
     auto k = inserted_keys[i];
     root = remove_at_layer0(root, *k);
+    delete k;
   }
 
   Alloc::print();
+  Alloc::reset();
+}
+
+
 
   // ポインタが4444とかになってる、つまり、何かが原因でkey_sliceの中のデータが流れてきてる！
   // 他のケースでは、途中のkey_lenが0になってる！　これはremoveかinsertの時に間をつめるのを忘れている！

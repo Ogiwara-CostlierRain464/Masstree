@@ -223,7 +223,6 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
     auto suffix = n->key_suffixes.get(index);
     if(suffix != nullptr){
       assert(n->key_len[index] == BorderNode::key_len_has_suffix);
-      // 何かが原因で、suffixのクリアに失敗している
       n->key_suffixes.delete_ptr(index);
     }
 
@@ -231,6 +230,9 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
     n->key_slice[index] = 0;
 
     delete n->lv[index].value;
+#ifndef NDEBUG
+    Alloc::decValue();
+#endif
 
     for(size_t i = index; i <= n_num_keys - 1; ++i){ // i=0~13 左シフト
       n->key_len[i] = n->key_len[i+1];

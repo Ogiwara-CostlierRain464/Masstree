@@ -10,6 +10,7 @@ extern int inc_interior_node;
 extern int dec_interior_node;
 extern int inc_big_suffix;
 extern int dec_big_suffix;
+extern int dec_value;
 
 class Alloc{
 private:
@@ -39,12 +40,26 @@ public:
     ++dec_big_suffix;
   }
 
+  static void decValue(){
+  ++dec_value;
+}
+
   static void print(){
     std::cout << "BorderInc: " << inc_border_node << std::endl;
-    std::cout << "BorderDec: " << dec_border_node << std::endl;
     std::cout << "Border±: " << inc_border_node - dec_border_node << std::endl;
     std::cout << "Interior±: " << inc_interior_node - dec_interior_node << std::endl;
     std::cout << "Suffix±: " << inc_big_suffix - dec_big_suffix << std::endl;
+    std::cout << "ValueDec: " << dec_value << std::endl;
+  }
+
+  static void reset(){
+    inc_border_node = 0;
+    dec_border_node = 0;
+    inc_interior_node = 0;
+    dec_interior_node = 0;
+    inc_big_suffix = 0;
+    dec_big_suffix = 0;
+    dec_value = 0;
   }
 };
 

@@ -537,6 +537,9 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
     // 上書きする
     // NOTE: 並行時には、古い値をGCする時に注意
     delete n->lv[index].value;
+#ifndef NDEBUG
+    Alloc::decValue();
+#endif
     n->lv[index].value = value;
   }else if(t == LAYER){
     k.next();
