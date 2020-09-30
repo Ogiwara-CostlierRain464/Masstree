@@ -36,7 +36,7 @@ struct SliceWithSize{
  */
 struct Key {
   std::vector<KeySlice> slices;
-  size_t length;
+  size_t length = 0;
   size_t cursor = 0;
 
   Key() = default;
@@ -45,7 +45,7 @@ struct Key {
   Key &operator=(const Key& other) = default;
   Key &operator=(Key&& other) = default;
 
-  Key(std::vector<KeySlice> slices_, size_t len)
+  Key(std::vector<KeySlice> slices_, size_t len) noexcept
     : slices(std::move(slices_)), length(len) {
     assert((slices.size() - 1) * 8 <= length
     and length <= slices.size() * 8);
@@ -64,12 +64,14 @@ struct Key {
    * @param from from以降のカーソルからの長さを返す
    * @return
    */
+  [[nodiscard]]
   size_t remainLength(size_t from) const{
     assert(from <= slices.size() - 1);
 
     return length - from * 8;
   }
 
+  [[nodiscard]]
   size_t lastSliceSize() const{
     if(length % 8 == 0){
       return 8;
@@ -87,6 +89,7 @@ struct Key {
     }
   }
 
+  [[nodiscard]]
   SliceWithSize getCurrentSlice() const{
     return SliceWithSize(slices[cursor], getCurrentSliceSize());
   }

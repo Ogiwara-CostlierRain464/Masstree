@@ -12,25 +12,25 @@ static BorderNode *start_new_tree(const Key &key, void *value){
 #ifndef NDEBUG
   Alloc::incBorder();
 #endif
-  root->version.is_root = true;
+  root->setIsRoot(true);
 
   auto cursor = key.getCurrentSlice();
   if(1 <= cursor.size and cursor.size <= 7){
-    root->key_len[0] = cursor.size;
-    root->key_slice[0] = cursor.slice;
-    root->lv[0].value = value;
+    root->setKeyLen(0, cursor.size);
+    root->setKeySlice(0, cursor.slice);
+    root->setLV(0, LinkOrValue(value));
   }else{
     assert(cursor.size == 8);
     if(key.hasNext()){
       // next layerは作らない
-      root->key_slice[0] = cursor.slice;
-      root->key_len[0] = BorderNode::key_len_has_suffix;
-      root->lv[0].value = value;
-      root->key_suffixes.set(0, key, 1);
+      root->setKeySlice(0, cursor.slice);
+      root->setKeyLen(0, BorderNode::key_len_has_suffix);
+      root->setLV(0, LinkOrValue(value));
+      root->getKeySuffixes().set(0, key, 1);
     }else{
-      root->key_len[0] = 8;
-      root->key_slice[0] = cursor.slice;
-      root->lv[0].value = value;
+      root->setKeyLen(0, 8);
+      root->setKeySlice(0, cursor.slice);
+      root->setLV(0, LinkOrValue(value));
     }
   }
 
@@ -41,9 +41,9 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
     for (size_t i = 0; i < borderNode->numberOfKeys(); ++i) {
-      if ((borderNode->key_len[i] == BorderNode::key_len_has_suffix
-           || borderNode->key_len[i] == BorderNode::key_len_layer)
-          && borderNode->key_slice[i] == cursor.slice
+      if ((borderNode->getKeyLen(i) == BorderNode::key_len_has_suffix
+           || borderNode->getKeyLen(i) == BorderNode::key_len_layer)
+          && borderNode->getKeySlice(i) == cursor.slice
         ) {
         return i;
       }
@@ -56,7 +56,7 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
 
 
 static void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
-  if(border->key_len[old_index] == BorderNode::key_len_has_suffix){
+  if(border->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
     * Masstree creates a new layer when inserting a key k1 into
@@ -70,44 +70,44 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
     *
     * @see §4.6.3
     */
-    lock(border);
+    border->lock();
     auto n1 = new BorderNode;
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
-    n1->version.is_root = true;
-    auto k2_val = border->lv[old_index].value;
-    auto k2_suffix_copy = new BigSuffix(*border->key_suffixes.get(old_index));
+    n1->setIsRoot(true);
+    auto k2_val = border->getLV(old_index).value;
+    auto k2_suffix_copy = new BigSuffix(*border->getKeySuffixes().get(old_index));
 #ifndef NDEBUG
     Alloc::incSuffix();
 #endif
     if(k2_suffix_copy->hasNext()){
-      n1->key_len[0] = BorderNode::key_len_has_suffix;
-      n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
+      n1->setKeyLen(0, BorderNode::key_len_has_suffix);
+      n1->setKeySlice(0, k2_suffix_copy->getCurrentSlice().slice);
       k2_suffix_copy->next();
-      n1->key_suffixes.set(0, k2_suffix_copy);
-      n1->lv[0].value = k2_val;
+      n1->getKeySuffixes().set(0, k2_suffix_copy);
+      n1->setLV(0, LinkOrValue(k2_val));
     }else{
-      n1->key_len[0] = k2_suffix_copy->getCurrentSlice().size;
-      n1->key_slice[0] = k2_suffix_copy->getCurrentSlice().slice;
-      n1->lv[0].value = k2_val;
+      n1->setKeyLen(0, k2_suffix_copy->getCurrentSlice().size);
+      n1->setKeySlice(0, k2_suffix_copy->getCurrentSlice().slice);
+      n1->setLV(0, LinkOrValue(k2_val));
       delete k2_suffix_copy;
 #ifndef NDEBUG
       Alloc::decSuffix();
 #endif
     }
 
-    border->key_len[old_index] = BorderNode::key_len_layer;
-    border->key_suffixes.delete_ptr(old_index);
-    border->lv[old_index].next_layer = n1;
+    border->setKeyLen(old_index, BorderNode::key_len_layer);
+    border->getKeySuffixes().delete_ptr(old_index);
+    border->setLV(old_index, LinkOrValue(n1));
 
-    unlock(border);
+    border->unlock();
     key.next();
-    put(border->lv[old_index].next_layer, key, value, border, old_index);
+    put(border->getLV(old_index).next_layer, key, value, border, old_index);
   }else{
-    assert(border->key_len[old_index] == BorderNode::key_len_layer);
+    assert(border->getKeyLen(old_index) == BorderNode::key_len_layer);
     key.next();
-    put(border->lv[old_index].next_layer, key, value, border, old_index);
+    put(border->getLV(old_index).next_layer, key, value, border, old_index);
   }
 }
 
@@ -126,40 +126,40 @@ static void insert_into_border(BorderNode *border, Key &key, void *value){
   size_t num_keys = border->numberOfKeys();
   auto cursor = key.getCurrentSlice();
   while (insertion_point < num_keys
-         && border->key_slice[insertion_point] < cursor.slice){ // NOTE: ここで、size見ないの？
+         && border->getKeySlice(insertion_point) < cursor.slice){ // NOTE: ここで、size見ないの？
     ++insertion_point;
   }
 
   for(size_t i = num_keys; i > insertion_point; --i){ // 右シフト
-    border->key_len[i] = border->key_len[i - 1];
-    border->key_slice[i] = border->key_slice[i - 1];
-    border->key_suffixes.set(i, border->key_suffixes.get(i - 1));
-    border->lv[i] = border->lv[i - 1];
+    border->setKeyLen(i, border->getKeyLen(i - 1));
+    border->setKeySlice(i, border->getKeySlice(i - 1));
+    border->getKeySuffixes().set(i, border->getKeySuffixes().get(i - 1));
+    border->setLV(i, border->getLV(i - 1));
   }
 
   // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
-  border->key_len[insertion_point] = 0;
-  border->key_slice[insertion_point] = 0;
-  border->key_suffixes.set(insertion_point, nullptr);
-  border->lv[insertion_point] = LinkOrValue{};
+  border->setKeyLen(insertion_point, 0);
+  border->setKeySlice(insertion_point, 0);
+  border->getKeySuffixes().set(insertion_point, nullptr);
+  border->setLV(insertion_point, LinkOrValue{});
 
   if(1 <= cursor.size and cursor.size <= 7){
-    border->key_len[insertion_point] = cursor.size;
-    border->key_slice[insertion_point] = cursor.slice;
-    border->lv[insertion_point].value = value;
+    border->setKeyLen(insertion_point, cursor.size);
+    border->setKeySlice(insertion_point, cursor.slice);
+    border->setLV(insertion_point, LinkOrValue(value));
   }else{
     assert(cursor.size == 8);
     if(key.hasNext()){
       // invariantを満たさない場合の処理は完了したので、ここでは
       // チェック不要
-      border->key_slice[insertion_point] = cursor.slice;
-      border->key_len[insertion_point] = BorderNode::key_len_has_suffix;
-      border->key_suffixes.set(insertion_point, key, key.cursor + 1);
-      border->lv[insertion_point].value = value;
+      border->setKeySlice(insertion_point, cursor.slice);
+      border->setKeyLen(insertion_point, BorderNode::key_len_has_suffix);
+      border->getKeySuffixes().set(insertion_point, key, key.cursor + 1);
+      border->setLV(insertion_point, LinkOrValue(value));
     }else{
-      border->key_len[insertion_point] = 8;
-      border->key_slice[insertion_point] = cursor.slice;
-      border->lv[insertion_point].value = value;
+      border->setKeyLen(insertion_point, 8);
+      border->setKeySlice(insertion_point, cursor.slice);
+      border->setLV(insertion_point, LinkOrValue(value));
     }
   }
 }
@@ -193,39 +193,39 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};
 
-  for(size_t i = 0, j = 0; i < p->n_keys + 1; ++i, ++j){
+  for(size_t i = 0, j = 0; i < p->getNumKeys() + 1; ++i, ++j){
     if(j == n_index + 1) ++j;
-    temp_child[j] = p->child[i];
+    temp_child[j] = p->getChild(i);
   }
-  for(size_t i = 0, j = 0; i < p->n_keys; ++i, ++j){
+  for(size_t i = 0, j = 0; i < p->getNumKeys(); ++i, ++j){
     if(j == n_index) ++j;
-    temp_key_slice[j] = p->key_slice[i];
+    temp_key_slice[j] = p->getKeySlice(i);
   }
   temp_child[n_index + 1] = n1;
   temp_key_slice[n_index] = slice;
 
   // clean
   // 実は、InteriorNodeの場合はn_keysを0にするだけで十分
-  std::fill(p->key_slice.begin(), p->key_slice.end(), 0);
-  std::fill(p->child.begin(), p->child.end(), nullptr);
-  p->n_keys = 0;
+  p->resetKeySlices();
+  p->resetChildren();
+  p->setNumKeys(0);
   size_t split = cut(Node::ORDER);
   size_t i, j;
   for(i = 0; i < split - 1; ++i){
-    p->child[i] = temp_child[i];
-    p->key_slice[i] = temp_key_slice[i];
-    ++p->n_keys;
+    p->setChild(i, temp_child[i]);
+    p->setKeySlice(i, temp_key_slice[i]);
+    p->incNumKeys();
   }
-  p->child[i] = temp_child[i];
+  p->setChild(i, temp_child[i]);
   for(++i, j = 0; i < Node::ORDER; ++i, ++j){
-    p1->child[j] = temp_child[i];
-    p1->key_slice[j] = temp_key_slice[i];
-    ++p1->n_keys;
+    p1->setChild(j, temp_child[i]);
+    p1->setKeySlice(j, temp_key_slice[i]);
+    p1->incNumKeys();
   }
-  p1->child[j] = temp_child[i];
-  p1->parent = p->parent;
-  for(i = 0; i <= p1->n_keys; ++i){
-    p1->child[i]->parent = p1;
+  p1->setChild(j, temp_child[i]);
+  p1->setParent(p->getParent());
+  for(i = 0; i <= p1->getNumKeys(); ++i){
+    p1->getChild(i)->setParent(p1);
   }
 }
 
@@ -233,9 +233,9 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
 static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
   assert(!n->isNotFull());
   for(size_t i = 0; i < Node::ORDER - 1; ++i){
-    if(!std::count(found.begin(), found.end(), n->key_slice[i])){ // NOT FOUND
-      table.emplace_back(n->key_slice[i], i);
-      found.push_back(n->key_slice[i]);
+    if(!std::count(found.begin(), found.end(), n->getKeySlice(i))){ // NOT FOUND
+      table.emplace_back(n->getKeySlice(i), i);
+      found.push_back(n->getKeySlice(i));
     }
   }
   // already sorted.
@@ -293,17 +293,17 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
 
   size_t insertion_index = 0;
   while (insertion_index < Node::ORDER - 1
-         && n->key_slice[insertion_index] < k.getCurrentSlice().slice){
+         && n->getKeySlice(insertion_index) < k.getCurrentSlice().slice){
     ++insertion_index;
   }
 
   // 16個分、tempにコピー
   for(size_t i = 0, j = 0; i < n->numberOfKeys(); ++i, ++j){
     if(j == insertion_index) ++j;
-    temp_key_len[j] = n->key_len[i];
-    temp_key_slice[j] = n->key_slice[i];
-    temp_lv[j] = n->lv[i];
-    temp_suffix[j] = n->key_suffixes.get(i);
+    temp_key_len[j] = n->getKeyLen(i);
+    temp_key_slice[j] = n->getKeySlice(i);
+    temp_lv[j] = n->getLV(i);
+    temp_suffix[j] = n->getKeySuffixes().get(i);
   }
 
   // ここでも、insert_into_borderと同じように
@@ -335,34 +335,34 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
   create_slice_table(n, table, found);
   size_t split = split_point(cursor.slice, table, found);
   // clear both nodes.
-  std::fill(n->key_len.begin(), n->key_len.end(), 0);
-  std::fill(n->key_slice.begin(), n->key_slice.end(), 0);
-  std::fill(n->lv.begin(), n->lv.end(), LinkOrValue{});
-  n->key_suffixes.reset();
+  n->resetKeyLen();
+  n->resetKeySlice();
+  n->resetLVs();
+  n->getKeySuffixes().reset();
 
-  std::fill(n1->key_len.begin(), n1->key_len.end(), 0);
-  std::fill(n1->key_slice.begin(), n1->key_slice.end(), 0);
-  std::fill(n1->lv.begin(), n1->lv.end(), LinkOrValue{});
-  n1->key_suffixes.reset();
+  n1->resetKeyLen();
+  n1->resetKeySlice();
+  n1->resetLVs();
+  n1->getKeySuffixes().reset();
 
   for(size_t i = 0; i < split; ++i){
-    n->key_len[i] = temp_key_len[i];
-    n->key_slice[i] = temp_key_slice[i];
-    n->lv[i] = temp_lv[i];
-    n->key_suffixes.set(i, temp_suffix[i]);
+    n->setKeyLen(i, temp_key_len[i]);
+    n->setKeySlice(i, temp_key_slice[i]);
+    n->setLV(i, temp_lv[i]);
+    n->getKeySuffixes().set(i, temp_suffix[i]);
   }
 
   for(size_t i = split, j = 0; i < Node::ORDER; ++i, ++j){
-    n1->key_len[j] = temp_key_len[i];
-    n1->key_slice[j] = temp_key_slice[i];
-    n1->lv[j] = temp_lv[i];
-    n1->key_suffixes.set(j, temp_suffix[i]);
+    n1->setKeyLen(j, temp_key_len[i]);
+    n1->setKeySlice(j, temp_key_slice[i]);
+    n1->setLV(j, temp_lv[i]);
+    n1->getKeySuffixes().set(j, temp_suffix[i]);
   }
 
-  n1->next = n->next;
-  n->next = n1;
-  n1->prev = n;
-  n1->parent = n->parent;
+  n1->setNext(n->getNext());
+  n->setNext(n1);
+  n1->setPrev(n);
+  n1->setParent(n->getParent());
 }
 
 
@@ -377,15 +377,15 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
 static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
   auto root = new InteriorNode;
 #ifndef NDEBUG
-    Alloc::incInterior();
+  Alloc::incInterior();
 #endif
-    root->version.is_root = true;
-  root->n_keys = 1;
-  root->key_slice[0] = slice;
-  root->child[0] = left;
-  root->child[1] = right;
-  left->parent = root;
-  right->parent = root;
+  root->setIsRoot(true);
+  root->setNumKeys(1);
+  root->setKeySlice(0, slice);
+  root->setChild(0, left);
+  root->setChild(1, right);
+  left->setParent(root);
+  right->setParent(root);
   return root;
 }
 
@@ -400,22 +400,22 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
   assert(p->isNotFull());
 
   // move to right
-  for(size_t i = p->n_keys; i > n_index; --i){
-    p->child[i + 1] = p->child[i];
-    p->key_slice[i] = p->key_slice[i - 1];
+  for(size_t i = p->getNumKeys(); i > n_index; --i){
+    p->setChild(i + 1, p->getChild(i));
+    p->setKeySlice(i, p->getKeySlice(i - 1));
   }
-  p->child[n_index + 1] = n1;
-  p->key_slice[n_index] = slice;
-  ++p->n_keys;
+  p->setChild(n_index + 1, n1);
+  p->setKeySlice(n_index, slice);
+  p->incNumKeys();
 }
 
 static KeySlice get_most_left_slice(Node *n){
-  if(n->version.is_border){
+  if(n->getIsBorder()){
     auto border = reinterpret_cast<BorderNode*>(n);
-    return border->key_slice[0];
+    return border->getKeySlice(0);
   }else{
     auto interior = reinterpret_cast<InteriorNode*>(n);
-    return interior->key_slice[0];
+    return interior->getKeySlice(0);
   }
 }
 
@@ -428,53 +428,53 @@ static KeySlice get_most_left_slice(Node *n){
  */
 static Node *split(Node *n, const Key &k, void *value){
   // precondition: n locked.
-  assert(n->version.locked);
+  assert(n->getLocked());
   Node *n1 = new BorderNode;
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
     // splitする時点で、nはrootにはなり得ない
-  n->version.is_root = false;
-  n->version.splitting = true;
+  n->setIsRoot(false);
+  n->setSplitting(true);
   // n1 is initially locked
-  n1->version = n->version;
+  n1->setVersion(n->getVersion());
   split_keys_among(
     reinterpret_cast<BorderNode *>(n),
     reinterpret_cast<BorderNode *>(n1), k, value);
   ascend:
-  InteriorNode *p = lockedParent(n);
+  InteriorNode *p = n->lockedParent();
   auto mostLeft = get_most_left_slice(n1);
   if(p == nullptr){
     p = create_root_with_children(n, mostLeft, n1);
-    unlock(n);
+    n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
-    unlock(n1);
+    n1->unlock();
     return p;
   }else if(p->isNotFull()){
-    p->version.inserting = true;
+    p->setInserting(true);
     size_t n_index = p->findChildIndex(n);
     insert_into_parent(p, n1, mostLeft ,n_index);
-    unlock(n);
+    n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
-    unlock(n1);
+    n1->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
-    unlock(p);
+    p->unlock();
     return nullptr;
   }else{
-    p->version.splitting = true;
+    p->setSplitting(true);
     size_t n_index = p->findChildIndex(n);
     std::atomic_thread_fence(std::memory_order_acq_rel);
-    unlock(n);
+    n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
     Node *p1 = new InteriorNode;
 #ifndef NDEBUG
     Alloc::incInterior();
 #endif
-    p1->version = p->version;
+    p1->setVersion(p->getVersion());
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),
       reinterpret_cast<InteriorNode *>(p1), mostLeft, n1, n_index);
-    unlock(n1); n = p; n1 = p1; goto ascend;
+    n1->unlock(); n = p; n1 = p1; goto ascend;
   }
 }
 
@@ -505,10 +505,10 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);
   auto index = std::get<2>(t_lv_i);
-  if((n->version ^ v) > Version::lock){
-    v = stableVersion(n); auto next = n->next;
+  if((n->getVersion() ^ v) > Version::lock){
+    v = n->stableVersion(); auto next = n->getNext();
     while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
-      n = next; v = stableVersion(n); next = n->next;
+      n = next; v = n->stableVersion(); next = n->getNext();
     }
     goto forward;
   }else if(t == NOTFOUND){
@@ -520,13 +520,13 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
       if(n->isNotFull()){
         insert_into_border(n, k, value);
       }else{
-        lock(n);
+        n->lock();
         auto may_new_root = split(n, k, value);
         if(may_new_root != nullptr){
           // rootがsplitによって新しくなったので、Layer0以外においては
           // 上のlayerのlv.next_layerを更新する必要がある
           if(upper_layer != nullptr){
-            upper_layer->lv[upper_index].next_layer = may_new_root;
+            upper_layer->setLV(upper_index, LinkOrValue(may_new_root));
           }
 
           return may_new_root;
@@ -536,11 +536,11 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
   }else if(t == VALUE){
     // 上書きする
     // NOTE: 並行時には、古い値をGCする時に注意
-    delete n->lv[index].value;
+    delete n->getLV(index).value;
 #ifndef NDEBUG
     Alloc::decValue();
 #endif
-    n->lv[index].value = value;
+    n->setLV(index, LinkOrValue(value));
   }else if(t == LAYER){
     k.next();
     put(lv.next_layer, k, value, n, index);
