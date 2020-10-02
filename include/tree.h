@@ -284,26 +284,26 @@ public:
   }
 
   SliceWithSize getCurrentSlice(){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
     if(hasNext()){
+      std::lock_guard<std::mutex> lock(suffixMutex);
       return SliceWithSize(slices[0], 8);
     }else{
+      std::lock_guard<std::mutex> lock(suffixMutex);
       return SliceWithSize(slices[0], lastSliceSize);
     }
   }
 
   size_t remainLength(){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
+    std::lock_guard<std::mutex> lock(suffixMutex);
     return (slices.size() - 1) * 8 + lastSliceSize;
   }
 
   bool hasNext(){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
+    std::lock_guard<std::mutex> lock(suffixMutex);
     return slices.size() >= 2;
   }
 
   void next(){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
     assert(hasNext());
     pop_front(slices);
   }
@@ -313,7 +313,7 @@ public:
    * @param slice
    */
   void insertTop(KeySlice slice){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
+    std::lock_guard<std::mutex> lock(suffixMutex);
     slices.insert(slices.begin(), slice);
   }
 
@@ -324,12 +324,12 @@ public:
    * @return
    */
   bool isSame(const Key &key, size_t from){
-//    std::lock_guard<std::mutex> lock(suffixMutex);
     // keyのサイズと、suffixのサイズの比較
     if(key.remainLength(from) != this->remainLength()){
       return false;
     }
 
+    std::lock_guard<std::mutex> lock(suffixMutex);
     for(size_t i = 0; i < slices.size(); ++i){
       if(key.slices[i + from] != slices[i]){
         return false;
@@ -350,12 +350,11 @@ public:
     return new BigSuffix(std::move(tmp), key.lastSliceSize());
   }
 
-
-
 private:
+  std::mutex suffixMutex{};
   std::vector<KeySlice> slices = {};
   const size_t lastSliceSize = 0;
-  std::mutex suffixMutex{};
+
 };
 
 /**
