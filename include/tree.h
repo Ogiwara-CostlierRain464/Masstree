@@ -383,7 +383,7 @@ public:
    * @param i
    * @param ptr
    */
-  void set(size_t i, BigSuffix* ptr){
+  void set(size_t i, BigSuffix* const &ptr){
     suffixes[i].store(ptr, std::memory_order_release);
   }
 
@@ -612,7 +612,7 @@ public:
     return next.load(std::memory_order_acquire);
   }
 
-  inline void setNext(BorderNode * next_){
+  inline void setNext(BorderNode* const &next_){
     next.store(next_, std::memory_order_release);
   }
 
@@ -621,7 +621,7 @@ public:
     return prev.load(std::memory_order_acquire);
   }
 
-  inline void setPrev(BorderNode * prev_){
+  inline void setPrev(BorderNode* const &prev_){
     prev.store(prev_, std::memory_order_release);
   }
 
