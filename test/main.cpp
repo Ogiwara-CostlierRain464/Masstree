@@ -28,11 +28,7 @@ public:
 
 
 TEST_F(Unit, init){
-  int a[] = {1,2,3};
-  MyArray arr(a, 3);
 
-  arr[2] = 6;
-  EXPECT_EQ(arr[2], 0);
 }
 
 int main(int argc, char **argv){

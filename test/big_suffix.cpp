@@ -22,14 +22,12 @@ TEST(BigSuffixTest, from){
   }
   // suffixにコピー済み
 
-  EXPECT_EQ(suffix->slices[0], TWO);
-  EXPECT_EQ(suffix->slices[1], THREE);
-  EXPECT_EQ(suffix->slices[2], AB);
-  EXPECT_EQ(suffix->lastSliceSize, 2);
-
+  EXPECT_EQ(suffix->getCurrentSlice().slice, TWO);
   suffix->next();
+  EXPECT_EQ(suffix->getCurrentSlice().slice, THREE);
   suffix->next();
   EXPECT_EQ(suffix->getCurrentSlice().slice, AB);
+  EXPECT_EQ(suffix->getCurrentSlice().size, 2);
 }
 
 

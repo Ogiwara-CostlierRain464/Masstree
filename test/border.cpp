@@ -9,19 +9,19 @@ class BorderNodeTest: public ::testing::Test{};
 TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
   BorderNode borderNode{};
 
-  borderNode.key_len[0] = 2;
-  borderNode.key_slice[0] = ONE;
+  borderNode.setKeyLen(0, 2);
+  borderNode.setKeySlice(0, ONE);
   int i = 0;
-  borderNode.lv[0].value = &i;
-  borderNode.key_len[1] = BorderNode::key_len_has_suffix;
-  borderNode.key_slice[1] = ONE;
+  borderNode.setLV(0, LinkOrValue(&i));
+  borderNode.setKeyLen(1, BorderNode::key_len_has_suffix);
+  borderNode.setKeySlice(1, ONE);
   BigSuffix suffix({TWO}, 2);
-  borderNode.key_suffixes.set(1, &suffix);
-  borderNode.lv[1].value = &i;
+  borderNode.getKeySuffixes().set(1, &suffix);
+  borderNode.setLV(1, LinkOrValue(&i));
   BorderNode next_layer{};
-  borderNode.key_len[2] = BorderNode::key_len_layer;
-  borderNode.key_slice[2] = TWO;
-  borderNode.lv[2].next_layer = &next_layer;
+  borderNode.setKeyLen(2, BorderNode::key_len_layer);
+  borderNode.setKeySlice(2, TWO);
+  borderNode.setLV(2, LinkOrValue(&next_layer));
 
   Key k({ONE}, 2);
   auto tuple = borderNode.extractLinkOrValueWithIndexFor(k);

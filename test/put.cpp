@@ -13,27 +13,27 @@ TEST(PutTest, start_new_tree){
   Key k({ONE}, 8);
   int i = 0;
   auto root = start_new_tree(k, &i);
-  EXPECT_EQ(root->key_len[0], 8);
-  EXPECT_EQ(root->key_slice[0], ONE);
+  EXPECT_EQ(root->getKeyLen(0), 8);
+  EXPECT_EQ(root->getKeySlice(0), ONE);
 
   Key k2({ONE, AB}, 11);
   auto root2 = start_new_tree(k2, &i);
-  EXPECT_EQ(root2->key_len[0], BorderNode::key_len_has_suffix);
-  EXPECT_EQ(root->key_slice[0], ONE);
-  EXPECT_EQ(root2->key_suffixes.get(0)->lastSliceSize, 3);
+  EXPECT_EQ(root2->getKeyLen(0), BorderNode::key_len_has_suffix);
+  EXPECT_EQ(root->getKeySlice(0), ONE);
+//  EXPECT_EQ(root2->getKeySuffixes().get(0)->lastSliceSize, 3);
 }
 
 TEST(PutTest, check_break_invariant){
   BorderNode border{};
   Key k({ONE, AB}, 10);
   EXPECT_EQ(check_break_invariant(&border, k), std::nullopt);
-  border.key_len[1] = BorderNode::key_len_has_suffix;
-  border.key_slice[1] = TWO;
+  border.setKeyLen(1, BorderNode::key_len_has_suffix);
+  border.setKeySlice(1, TWO);
   EXPECT_EQ(check_break_invariant(&border, k), std::nullopt);
-  border.key_len[0] = BorderNode::key_len_has_suffix;
-  border.key_slice[0] = ONE;
+  border.setKeyLen(0, BorderNode::key_len_has_suffix);
+  border.setKeySlice(0, ONE);
   BigSuffix suffix({CD}, 3);
-  border.key_suffixes.set(0, &suffix);
+  border.getKeySuffixes().set(0, &suffix);
   EXPECT_EQ(check_break_invariant(&border, k), std::make_optional(0));
 }
 
@@ -41,62 +41,62 @@ TEST(PutTest, check_break_invariant){
 TEST(PutTest, handle_break_invariant){
   BorderNode borderNode{};
   int i = 4;
-  borderNode.key_len[0] = 8;
-  borderNode.key_slice[0] = EIGHT;
-  borderNode.lv[0].value =  &i;
-  borderNode.key_len[1] = BorderNode::key_len_has_suffix;
-  borderNode.key_slice[1] = EIGHT;
+  borderNode.setKeyLen(0, 8);
+  borderNode.setKeySlice(0, EIGHT);
+  borderNode.setLV(0, LinkOrValue(&i));
+  borderNode.setKeyLen(1, BorderNode::key_len_has_suffix);
+  borderNode.setKeySlice(1, EIGHT);
   auto suffix = new BigSuffix({ONE, TWO, THREE, AB}, 2);
-  borderNode.key_suffixes.set(1, suffix);
-  borderNode.lv[1].value = &i;
+  borderNode.getKeySuffixes().set(1, suffix);
+  borderNode.setLV(1, LinkOrValue(&i));
   int j = 5;
   Key k({EIGHT, ONE, TWO, CD}, 26);
   handle_break_invariant(&borderNode, k, &j, 1);
 
-  ASSERT_EQ(borderNode.key_len[1], BorderNode::key_len_layer);
-  ASSERT_EQ(borderNode.key_suffixes.get(1), nullptr);
-  auto next = reinterpret_cast<BorderNode *>(borderNode.lv[1].next_layer);
-  ASSERT_EQ(next->key_len[0], BorderNode::key_len_layer);
-  ASSERT_EQ(next->key_slice[0], ONE);
-  next = reinterpret_cast<BorderNode *>(next->lv[0].next_layer);
-  ASSERT_EQ(next->key_len[0], BorderNode::key_len_layer);
-  ASSERT_EQ(next->key_slice[0], TWO);
-  next = reinterpret_cast<BorderNode *>(next->lv[0].next_layer);
-  ASSERT_EQ(next->key_len[0], 2);
-  ASSERT_EQ(next->key_slice[0], CD);
-  ASSERT_EQ(next->key_len[1], BorderNode::key_len_has_suffix);
-  ASSERT_EQ(next->key_slice[1], THREE);
-  ASSERT_EQ(next->key_suffixes.get(1)->getCurrentSlice().slice, AB);
+  ASSERT_EQ(borderNode.getKeyLen(1), BorderNode::key_len_layer);
+  ASSERT_EQ(borderNode.getKeySuffixes().get(1), nullptr);
+  auto next = reinterpret_cast<BorderNode *>(borderNode.getLV(1).next_layer);
+  ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_layer);
+  ASSERT_EQ(next->getKeySlice(0), ONE);
+  next = reinterpret_cast<BorderNode *>(next->getLV(0).next_layer);
+  ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_layer);
+  ASSERT_EQ(next->getKeySlice(0), TWO);
+  next = reinterpret_cast<BorderNode *>(next->getLV(0).next_layer);
+  ASSERT_EQ(next->getKeyLen(0), 2);
+  ASSERT_EQ(next->getKeySlice(0), CD);
+  ASSERT_EQ(next->getKeyLen(1), BorderNode::key_len_has_suffix);
+  ASSERT_EQ(next->getKeySlice(1), THREE);
+  ASSERT_EQ(next->getKeySuffixes().get(1)->getCurrentSlice().slice, AB);
 }
 
 TEST(PutTest, insert_into_border){
   BorderNode border{};
   BorderNode next{};
   int i = 9;
-  border.key_len[0] = 2;
-  border.key_slice[0] = ONE;
-  border.lv[0].value = &i;
-  border.key_len[1] = BorderNode::key_len_has_suffix;
-  border.key_slice[1] = THREE;
-  border.key_suffixes.set(1, new BigSuffix({FOUR}, 8));
-  border.lv[1].value = &i;
-  border.key_len[2] = BorderNode::key_len_layer;
-  border.key_slice[2] = FOUR;
-  border.lv[2].next_layer = &next;
-  border.key_len[3] = 3;
-  border.key_slice[3] = FIVE;
-  border.lv[3].value = &i;
+  border.setKeyLen(0, 2);
+  border.setKeySlice(0, ONE);
+  border.setLV(0, LinkOrValue(&i));
+  border.setKeyLen(1, BorderNode::key_len_has_suffix);
+  border.setKeySlice(1, THREE);
+  border.getKeySuffixes().set(1, new BigSuffix({FOUR}, 8));
+  border.setLV(1, LinkOrValue(&i));
+  border.setKeyLen(2, BorderNode::key_len_layer);
+  border.setKeySlice(2, FOUR);
+  border.setLV(2, LinkOrValue(&next));
+  border.setKeyLen(3, 3);
+  border.setKeySlice(3, FIVE);
+  border.setLV(3, LinkOrValue(&i));
 
   Key k({TWO, FIVE}, 16);
   insert_into_border(&border, k, &i);
 
-  EXPECT_EQ(border.key_len[1], BorderNode::key_len_has_suffix);
-  EXPECT_EQ(border.key_slice[1], TWO);
-  EXPECT_TRUE(border.key_suffixes.get(1)->getCurrentSlice().slice == FIVE);
-  EXPECT_EQ(border.key_len[2], BorderNode::key_len_has_suffix);
-  EXPECT_EQ(border.key_slice[2], THREE);
-  EXPECT_TRUE(border.key_suffixes.get(2)->getCurrentSlice().slice == FOUR);
-  EXPECT_EQ(border.key_len[3], BorderNode::key_len_layer);
+  EXPECT_EQ(border.getKeyLen(1), BorderNode::key_len_has_suffix);
+  EXPECT_EQ(border.getKeySlice(1), TWO);
+  EXPECT_TRUE(border.getKeySuffixes().get(1)->getCurrentSlice().slice == FIVE);
+  EXPECT_EQ(border.getKeyLen(2), BorderNode::key_len_has_suffix);
+  EXPECT_EQ(border.getKeySlice(2), THREE);
+  EXPECT_TRUE(border.getKeySuffixes().get(2)->getCurrentSlice().slice == FOUR);
+  EXPECT_EQ(border.getKeyLen(3), BorderNode::key_len_layer);
 }
 
 
@@ -108,32 +108,33 @@ TEST(PutTest, split_keys_among1){
   InteriorNode n1{};
   InteriorNode d1{};
   // p should full
-  p.n_keys = Node::ORDER - 1;
+  p.setNumKeys(Node::ORDER - 1);
   for(size_t i = 0; i < 16; ++i)
-    p.child[i] = &d1;
+    p.setChild(i, &d1);
 
-  p.key_slice[0] = 0;
-  p.key_slice[1] = 1;
-  p.key_slice[2] = 2;
-  p.key_slice[3] = 3;
-  p.key_slice[4] = 4;
-  p.key_slice[5] = 5;
-  p.key_slice[6] = 6;
-  p.key_slice[7] = 7;
-  p.key_slice[8] = 9;
-  p.key_slice[9] = 10;
-  p.key_slice[10] = 11;
-  p.key_slice[11] = 12;
-  p.key_slice[12] = 13;
-  p.key_slice[13] = 14;
-  p.key_slice[14] = 15;
+  p.setKeySlice(0, 0);
+  p.setKeySlice(1, 1);
+  p.setKeySlice(2, 2);
+  p.setKeySlice(3, 3);
+  p.setKeySlice(4, 4);
+  p.setKeySlice(5, 5);
+  p.setKeySlice(6, 6);
+  p.setKeySlice(7, 7);
+  p.setKeySlice(8, 9);
+  p.setKeySlice(9, 10);
+  p.setKeySlice(10, 11);
+  p.setKeySlice(11, 12);
+  p.setKeySlice(12, 13);
+  p.setKeySlice(13, 14);
+  p.setKeySlice(14, 15);
+
   split_keys_among(&p, &p1, 8, &n1, 7);
-  EXPECT_EQ(p.n_keys, 7);
-  EXPECT_EQ(p.key_slice[7], 0);
-  EXPECT_EQ(p.child[8], nullptr);
-  EXPECT_EQ(p1.n_keys, 8);
-  EXPECT_EQ(p.key_slice[7], 0);
-  EXPECT_EQ(p.child[8], nullptr);
+  EXPECT_EQ(p.getNumKeys(), 7);
+  EXPECT_EQ(p.getKeySlice(7), 0);
+  EXPECT_EQ(p.getChild(8), nullptr);
+  EXPECT_EQ(p1.getNumKeys(), 8);
+  EXPECT_EQ(p.getKeySlice(7), 0);
+  EXPECT_EQ(p.getChild(8), nullptr);
 }
 
 
@@ -141,38 +142,38 @@ TEST(PutTest, slice_table){
   // NOTE: より効率的なアルゴリズムを考えるべき
 
   BorderNode n{};
-  n.key_len[0] = 1;
-  n.key_slice[0] = ONE;
-  n.key_len[1] = 2;
-  n.key_slice[1] = ONE;
-  n.key_len[2] = 3;
-  n.key_slice[2] = ONE;
-  n.key_len[3] = 4;
-  n.key_slice[3] = ONE;
-  n.key_len[4] = BorderNode::key_len_layer;
-  n.key_slice[4] = ONE;
+  n.setKeyLen(0, 1);
+  n.setKeySlice(0, ONE);
+  n.setKeyLen(1, 2);
+  n.setKeySlice(1, ONE);
+  n.setKeyLen(2, 3);
+  n.setKeySlice(2, ONE);
+  n.setKeyLen(3, 4);
+  n.setKeySlice(3, ONE);
+  n.setKeyLen(4, BorderNode::key_len_layer);
+  n.setKeySlice(4, ONE);
 
-  n.key_len[5] = 1;
-  n.key_slice[5] = TWO;
-  n.key_len[6] = 2;
-  n.key_slice[6] = TWO;
-  n.key_len[7] = 3;
-  n.key_slice[7] = TWO;
-  n.key_len[8] = 4;
-  n.key_slice[8] = TWO;
-  n.key_len[9] = BorderNode::key_len_layer;
-  n.key_slice[9] = TWO;
+  n.setKeyLen(5, 1);
+  n.setKeySlice(5, TWO);
+  n.setKeyLen(6, 2);
+  n.setKeySlice(6, TWO);
+  n.setKeyLen(7, 3);
+  n.setKeySlice(7, TWO);
+  n.setKeyLen(8, 4);
+  n.setKeySlice(8, TWO);
+  n.setKeyLen(9, BorderNode::key_len_layer);
+  n.setKeySlice(9, TWO);
 
-  n.key_len[10] = 1;
-  n.key_slice[10] = FOUR;
-  n.key_len[11] = 2;
-  n.key_slice[11] = FOUR;
-  n.key_len[12] = 3;
-  n.key_slice[12] = FOUR;
-  n.key_len[13] = 4;
-  n.key_slice[13] = FOUR;
-  n.key_len[14] = BorderNode::key_len_layer;
-  n.key_slice[14] = FOUR;
+  n.setKeyLen(10, 1);
+  n.setKeySlice(10, FOUR);
+  n.setKeyLen(11, 2);
+  n.setKeySlice(11, FOUR);
+  n.setKeyLen(12, 3);
+  n.setKeySlice(12, FOUR);
+  n.setKeyLen(13, 4);
+  n.setKeySlice(13, FOUR);
+  n.setKeyLen(14, BorderNode::key_len_layer);
+  n.setKeySlice(14, FOUR);
 
   std::vector<std::pair<KeySlice, size_t>> table;
   std::vector<KeySlice> found;
@@ -198,74 +199,74 @@ TEST(PutTest, split_keys_among2){
   BorderNode n1{};
 
   int i = 9;
-  n.key_len[0] = 1;
-  n.key_slice[0] = 110;
-  n.lv[0].value = &i;
+  n.setKeyLen(0, 1);
+  n.setKeySlice(0, 110);
+  n.setLV(0, LinkOrValue(&i));
 
-  n.key_len[1] = 2;
-  n.key_slice[1] = 110;
-  n.lv[1].value = &i;
+  n.setKeyLen(1, 2);
+  n.setKeySlice(1, 110);
+  n.setLV(1, LinkOrValue(&i));
 
-  n.key_len[2] = 3;
-  n.key_slice[2] = 110;
-  n.lv[2].value = &i;
+  n.setKeyLen(2, 3);
+  n.setKeySlice(2, 110);
+  n.setLV(2, LinkOrValue(&i));
 
-  n.key_len[3] = BorderNode::key_len_has_suffix;
-  n.key_slice[3] = 110;
-  n.key_suffixes.set(3, new BigSuffix({AB}, 2));
-  n.lv[3].value = &i;
-
-
-  n.key_len[4] = 1;
-  n.key_slice[4] = 111;
-  n.lv[4].value = &i;
-
-  n.key_len[5] = 2;
-  n.key_slice[5] = 111;
-  n.lv[5].value = &i;
-
-  n.key_len[6] = 3;
-  n.key_slice[6] = 111;
-  n.lv[6].value = &i;
-
-  n.key_len[7] = BorderNode::key_len_has_suffix;
-  n.key_slice[7] = 111;
-  n.key_suffixes.set(7, new BigSuffix({CD}, 2));
-  n.lv[7].value = &i;
+  n.setKeyLen(3, BorderNode::key_len_has_suffix);
+  n.setKeySlice(3, 110);
+  n.getKeySuffixes().set(3, new BigSuffix({AB}, 2));
+  n.setLV(3, LinkOrValue(&i));
 
 
-  n.key_len[8] = 1;
-  n.key_slice[8] = 113;
-  n.lv[8].value = &i;
+  n.setKeyLen(4, 1);
+  n.setKeySlice(4, 111);
+  n.setLV(4, LinkOrValue(&i));
 
-  n.key_len[9] = 2;
-  n.key_slice[9] = 113;
-  n.lv[9].value = &i;
+  n.setKeyLen(5, 2);
+  n.setKeySlice(5, 111);
+  n.setLV(5, LinkOrValue(&i));
 
-  n.key_len[10] = 3;
-  n.key_slice[10] = 113;
-  n.lv[10].value = &i;
+  n.setKeyLen(6, 3);
+  n.setKeySlice(6, 111);
+  n.setLV(6, LinkOrValue(&i));
 
-  n.key_len[11] = BorderNode::key_len_layer;
-  n.key_slice[11] = 113;
+  n.setKeyLen(7, BorderNode::key_len_has_suffix);
+  n.setKeySlice(7, 111);
+  n.getKeySuffixes().set(7, new BigSuffix({CD}, 2));
+  n.setLV(7, LinkOrValue(&i));
+
+
+  n.setKeyLen(8 ,1);
+  n.setKeySlice(8, 113);
+  n.setLV(8, LinkOrValue(&i));
+
+  n.setKeyLen(9 ,2);
+  n.setKeySlice(9, 113);
+  n.setLV(9, LinkOrValue(&i));
+
+  n.setKeyLen(10, 3);
+  n.setKeySlice(10, 113);
+  n.setLV(10, LinkOrValue(&i));
+
+  n.setKeyLen(11, BorderNode::key_len_layer);
+  n.setKeySlice(11, 113);
   BorderNode next{};
-  n.lv[11].next_layer = &next;
+  n.setLV(11, LinkOrValue(&next));
 
 
-  n.key_len[12] = 1;
-  n.key_slice[12] = 114;
-  n.lv[12].value = &i;
+  n.setKeyLen(12, 1);
+  n.setKeySlice(12, 114);
+  n.setLV(12, LinkOrValue(&i));
 
-  n.key_len[13] = 2;
-  n.key_slice[13] = 114;
-  n.lv[13].value = &i;
+  n.setKeyLen(13, 2);
+  n.setKeySlice(13 ,114);
+  n.setLV(13, LinkOrValue(&i));
 
-  n.key_len[14] = 3;
-  n.key_slice[14] = 114;
-  n.lv[14].value = &i;
+  n.setKeyLen(14, 3);
+  n.setKeySlice(14, 114);
+  n.setLV(14, LinkOrValue(&i));
 
   Key k({112, AB}, 10);
   split_keys_among(&n, &n1, k, &i);
-  EXPECT_EQ(n.key_len[8], 0);
-  EXPECT_EQ(n1.key_suffixes.get(1), nullptr);
+  EXPECT_EQ(n.getKeyLen(8), 0);
+  EXPECT_EQ(n1.getKeySuffixes().get(1), nullptr);
 }

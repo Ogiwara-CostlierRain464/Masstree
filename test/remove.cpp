@@ -12,20 +12,20 @@ class RemoveTest: public ::testing::Test{};
 
 TEST(RemoveTest, not_empty_border){
   auto b = new BorderNode;
-  b->version.is_root = true;
+  b->setIsRoot(true);
 
-  b->key_len[0] = 1;
-  b->key_slice[0] = ONE;
-  b->key_len[1] = 1;
-  b->key_slice[1] = TWO;
-  b->key_len[2] = 1;
-  b->key_slice[2] = THREE;
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, ONE);
+  b->setKeyLen(1, 1);
+  b->setKeySlice(1, TWO);
+  b->setKeyLen(2, 1);
+  b->setKeySlice(2, THREE);
 
   Key k({TWO}, 1);
   auto pair = remove(b, k, nullptr, 0);
   EXPECT_TRUE(pair.second == b);
-  EXPECT_EQ(b->key_slice[0], ONE);
-  EXPECT_EQ(b->key_slice[1], THREE);
+  EXPECT_EQ(b->getKeySlice(0), ONE);
+  EXPECT_EQ(b->getKeySlice(1), THREE);
 }
 
 //endregion
@@ -38,31 +38,31 @@ TEST(RemoveTest, left_most_1){
   auto c = new BorderNode;
   auto d = new BorderNode;
 
-  a->key_slice[0] = 25;
-  a->version.is_root = true;
-  a->child[0] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 15;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->n_keys = 1;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 14;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 15;
-  d->key_len[1] = 1;
-  d->key_slice[1] = 20;
+  a->setKeySlice(0, 25);
+  a->setIsRoot(true);
+  a->setChild(0, b);
+  a->setNumKeys(1);
+  b->setKeySlice(0, 15);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setNumKeys(1);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 14);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 15);
+  d->setKeyLen(1, 1);
+  d->setKeySlice(1, 20);
 
-  d->parent = b;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  d->setParent(b);
+  d->setPrev(c);
+  c->setParent(b);
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({14}, 1);
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_TRUE(pair.second == a);
-  EXPECT_TRUE(a->child[0] == d);
+  EXPECT_TRUE(a->getChild(0) == d);
 }
 
 TEST(RemoveTest, left_most_2){
@@ -72,37 +72,37 @@ TEST(RemoveTest, left_most_2){
   auto d = new BorderNode;
   auto e = new BorderNode;
 
-  a->key_slice[0] = 15;
-  a->version.is_root = true;
-  a->child[0] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 13;
-  b->key_slice[1] = 14;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->child[2] = e;
-  b->n_keys = 2;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 12;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 13;
-  e->key_len[0] = 1;
-  e->key_slice[0] = 14;
+  a->setKeySlice(0, 15);
+  a->setIsRoot(true);
+  a->setChild(0, b);
+  a->setNumKeys(1);
+  b->setKeySlice(0, 13);
+  b->setKeySlice(1, 14);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setChild(2, e);
+  b->setNumKeys(2);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 12);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 13);
+  e->setKeyLen(0, 1);
+  e->setKeySlice(0, 14);
 
-  e->parent = b;
-  e->prev = d;
-  d->parent = b;
-  d->next = e;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  e->setParent(b);
+  e->setPrev(d);
+  d->setParent(b);
+  d->setNext(e);
+  d->setPrev(c);
+  c->setParent(b);
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({12}, 1);
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_TRUE(pair.second == a);
-  EXPECT_EQ(b->n_keys, 1);
-  EXPECT_EQ(b->key_slice[0], 14);
+  EXPECT_EQ(b->getNumKeys(), 1);
+  EXPECT_EQ(b->getKeySlice(0), 14);
 }
 
 TEST(RemoveTest, right_most){
@@ -111,29 +111,29 @@ TEST(RemoveTest, right_most){
   auto c = new BorderNode;
   auto d = new BorderNode;
 
-  a->key_slice[0] = 20;
-  a->version.is_root = true;
-  a->child[1] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 22;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->n_keys = 1;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 21;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 22;
+  a->setKeySlice(0, 20);
+  a->setIsRoot(true);
+  a->setChild(1, b);
+  a->setNumKeys(1);
+  b->setKeySlice(0, 22);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setNumKeys(1);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 21);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 22);
 
-  d->parent = b;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  d->setParent(b);
+  d->setPrev(c);
+  c->setParent(b);
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({22}, 1);
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_TRUE(pair.second == a);
-  EXPECT_TRUE(a->child[1] == c);
+  EXPECT_TRUE(a->getChild(1) == c);
 }
 
 TEST(RemoveTest, right_most_2){
@@ -143,38 +143,38 @@ TEST(RemoveTest, right_most_2){
   auto d = new BorderNode;
   auto e = new BorderNode;
 
-  a->key_slice[0] = 20;
-  a->version.is_root = true;
-  a->child[1] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 22;
-  b->key_slice[1] = 24;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->child[2] = e;
-  b->n_keys = 2;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 20;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 22;
-  d->key_len[1] = 1;
-  d->key_slice[1] = 23;
-  e->key_len[0] = 1;
-  e->key_slice[0] = 24;
+  a->setKeySlice(0, 20);
+  a->setIsRoot(true);
+  a->setChild(1, b);
+  a->setNumKeys(1);
+  b->setKeySlice(0, 22);
+  b->setKeySlice(1, 24);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setChild(2, e);
+  b->setNumKeys(2);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 20);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 22);
+  d->setKeyLen(1 ,1);
+  d->setKeySlice(1, 23);
+  e->setKeyLen(0, 1);
+  e->setKeySlice(0, 24);
 
-  e->parent = b;
-  e->prev = d;
-  d->parent = b;
-  d->next = e;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  e->setParent(b);
+  e->setPrev(d);
+  d->setParent(b);
+  d->setNext(e);
+  d->setPrev(c);
+  c->setParent(b);
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({24}, 1);
   auto pair = remove(a, k, nullptr, 0);
-  EXPECT_EQ(b->n_keys, 1);
-  EXPECT_EQ(b->key_slice[0], 22);
+  EXPECT_EQ(b->getNumKeys(), 1);
+  EXPECT_EQ(b->getKeySlice(0), 22);
 }
 
 //endregion
@@ -186,30 +186,30 @@ TEST(RemoveTest, middle1){
   auto c = new BorderNode;
   auto d = new BorderNode;
 
-  a->key_slice[0] = 25;
-  a->version.is_root = true;
-  a->child[0] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 15;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->n_keys = 1;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 5;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 15;
+  a->setKeySlice(0, 25);
+  a->setIsRoot(true);
+  a->setChild(0, b);
+  a->setNumKeys(1);
+  b->setKeySlice(0, 15);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setNumKeys(1);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 5);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 15);
 
-  d->parent = b;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  d->setParent(b);
+  d->setPrev(c);
+  c->setParent(b) ;
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({15}, 1);
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_TRUE(pair.second == a);
-  EXPECT_TRUE(a->child[0] == c);
-  EXPECT_TRUE(c->parent == a);
+  EXPECT_TRUE(a->getChild(0) == c);
+  EXPECT_TRUE(c->getParent() == a);
 }
 
 TEST(RemoveTest, middle2){
@@ -221,53 +221,53 @@ TEST(RemoveTest, middle2){
   auto f = new BorderNode;
   auto g = new BorderNode;
 
-  a->key_slice[0] = 20;
-  a->version.is_root = true;
-  a->child[1] = b;
-  a->n_keys = 1;
-  b->key_slice[0] = 21;
-  b->key_slice[1] = 22;
-  b->key_slice[2] = 23;
-  b->key_slice[3] = 24;
-  b->child[0] = c;
-  b->child[1] = d;
-  b->child[2] = e;
-  b->child[3] = f;
-  b->child[4] = g;
-  b->n_keys = 4;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 20;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 21;
-  e->key_len[0] = 1;
-  e->key_slice[0] = 22;
-  f->key_len[0] = 1;
-  f->key_slice[0] = 23;
-  g->key_len[0] = 1;
-  g->key_slice[0] = 24;
+  a->setKeySlice(0, 20);
+  a->setIsRoot(true);
+  a->setChild(1, b);
+  a->setNumKeys(1) ;
+  b->setKeySlice(0, 21);
+  b->setKeySlice(1, 22);
+  b->setKeySlice(2, 23);
+  b->setKeySlice(3, 24);
+  b->setChild(0, c);
+  b->setChild(1, d);
+  b->setChild(2, e);
+  b->setChild(3, f);
+  b->setChild(4, g);
+  b->setNumKeys(4);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 20);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 21);
+  e->setKeyLen(0, 1);
+  e->setKeySlice(0, 22);
+  f->setKeyLen(0, 1);
+  f->setKeySlice(0, 23);
+  g->setKeyLen(0, 1);
+  g->setKeySlice(0, 24);
 
-  g->parent = b;
-  g->prev = f;
-  f->parent = b;
-  f->next = g;
-  f->prev = e;
-  e->parent = b;
-  e->next = f;
-  e->prev = d;
-  d->parent = b;
-  d->next = e;
-  d->prev = c;
-  c->parent = b;
-  c->next = d;
-  b->parent = a;
+  g->setParent(b);
+  g->setPrev(f);
+  f->setParent(b);
+  f->setNext(g);
+  f->setPrev(e);
+  e->setParent(b);
+  e->setNext(f);
+  e->setPrev(d);
+  d->setParent(b);
+  d->setNext(e);
+  d->setPrev(c);
+  c->setParent(b);
+  c->setNext(d);
+  b->setParent(a);
 
   Key k({22}, 1);
   auto pair = remove(a, k, nullptr, 0);
-  EXPECT_EQ(b->n_keys, 3);
-  EXPECT_EQ(b->key_slice[0], 21);
-  EXPECT_EQ(b->key_slice[1], 23);
-  EXPECT_EQ(b->key_slice[2], 24);
-  EXPECT_TRUE(b->child[2] == f);
+  EXPECT_EQ(b->getNumKeys(), 3);
+  EXPECT_EQ(b->getKeySlice(0), 21);
+  EXPECT_EQ(b->getKeySlice(1), 23);
+  EXPECT_EQ(b->getKeySlice(2), 24);
+  EXPECT_TRUE(b->getChild(2) == f);
 }
 //endregion
 
@@ -282,46 +282,46 @@ TEST(RemoveTest, new_root){
   auto e = new BorderNode;
   auto f = new BorderNode;
 
-  upper_node->lv[upper_index].next_layer = a;
-  a->key_slice[0] = 25;
-  a->child[0] = b;
-  a->child[1] = c;
-  a->n_keys = 1;
-  a->version.is_root = true;
-  b->key_len[0] = 1;
-  b->key_slice[0] = 9;
-  c->key_slice[0] = 45;
-  c->key_slice[1] = 60;
-  c->child[0] = d;
-  c->child[1] = e;
-  c->child[2] = f;
-  c->n_keys = 2;
-  d->key_len[0] = 1;
-  d->key_slice[0] = 35;
-  e->key_len[0] = 1;
-  e->key_slice[0] = 55;
-  f->key_len[0] = 1;
-  f->key_slice[0] = 78;
+  upper_node->setLV(upper_index, LinkOrValue(a));
+  a->setKeySlice(0, 25);
+  a->setChild(0, b);
+  a->setChild(1, c);
+  a->setNumKeys(1);
+  a->setIsRoot(true);
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, 9);
+  c->setKeySlice(0, 45);
+  c->setKeySlice(1, 60);
+  c->setChild(0, d);
+  c->setChild(1, e);
+  c->setChild(2, f);
+  c->setNumKeys(2);
+  d->setKeyLen(0, 1);
+  d->setKeySlice(0, 35);
+  e->setKeyLen(0, 1);
+  e->setKeySlice(0, 55);
+  f->setKeyLen(0, 1);
+  f->setKeySlice(0, 78);
 
-  f->parent = c;
-  f->prev = e;
-  e->parent = c;
-  e->next = f;
-  e->prev = d;
-  d->parent = c;
-  d->next = e;
-  d->prev = b;
-  b->parent = a;
-  b->next = d;
-  c->parent = a;
-  b->parent = a;
+  f->setParent(c);
+  f->setPrev(e);
+  e->setParent(c);
+  e->setNext(f);
+  e->setPrev(d);
+  d->setParent(c);
+  d->setNext(e);
+  d->setPrev(b);
+  b->setParent(a);
+  b->setNext(d);
+  c->setParent(a);
+  b->setParent(a);
 
   Key k({9}, 1);
   auto pair = remove(a, k, upper_node, upper_index);
-  ASSERT_TRUE(upper_node->lv[upper_index].next_layer == c);
-  EXPECT_TRUE(c->parent == nullptr);
-  EXPECT_TRUE(c->version.is_root);
-  EXPECT_EQ(d->prev, nullptr);
+  ASSERT_TRUE(upper_node->getLV(upper_index).next_layer == c);
+  EXPECT_TRUE(c->getParent() == nullptr);
+  EXPECT_TRUE(c->getIsRoot());
+  EXPECT_EQ(d->getPrev(), nullptr);
   // bがいつ解放されるだろうか
 }
 
@@ -332,20 +332,20 @@ TEST(RemoveTest, remove_layer_1){
   auto a = new InteriorNode;
   auto b = new BorderNode;
   auto c = new BorderNode;
-  a->key_slice[0] = 10;
-  a->child[0] = b;
-  a->child[1] = c;
-  a->n_keys = 1;
-  a->version.is_root = true;
-  b->key_len[0] = 1;
-  b->key_slice[0] = 9;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 10;
+  a->setKeySlice(0, 10);
+  a->setChild(0, b);
+  a->setChild(1, c);
+  a->setNumKeys(1);
+  a->setIsRoot(true);
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, 9);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 10);
 
-  c->parent = a;
-  c->prev = b;
-  b->parent = a;
-  b->next = c;
+  c->setParent(a);
+  c->setPrev(b) ;
+  b->setParent(a);
+  b->setNext(c);
 
   Key k({9}, 1);
   auto pair = remove(a, k, upper_b, 0);
@@ -357,11 +357,11 @@ TEST(RemoveTest, remove_layer_2){
   // rootのBorderNodeがサイズ1になった時
   auto upper_b = new BorderNode;
   auto b = new BorderNode;
-  b->key_len[0] = 1;
-  b->key_slice[0] = 9;
-  b->key_len[1] = 1;
-  b->key_slice[1] = 10;
-  b->version.is_root = true;
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, 9);
+  b->setKeyLen(1, 1);
+  b->setKeySlice(1, 10);
+  b->setIsRoot(true);
 
   Key k({9}, 1);
   auto pair = remove(b, k, upper_b, 0);
@@ -374,25 +374,25 @@ TEST(RemoveTest, remove_all_layer){
   auto c = new BorderNode;
   auto d = new BorderNode;
 
-  a->key_len[0] = BorderNode::key_len_layer;
-  a->key_slice[0] = ONE;
-  a->version.is_root = true;
-  a->lv[0].next_layer = b;
+  a->setKeyLen(0, BorderNode::key_len_layer);
+  a->setKeySlice(0, ONE);
+  a->setIsRoot(true);
+  a->setLV(0, LinkOrValue(b));
 
-  b->key_len[0] = BorderNode::key_len_layer;
-  b->key_slice[0] = TWO;
-  b->version.is_root = true;
-  b->lv[0].next_layer = c;
+  b->setKeyLen(0, BorderNode::key_len_layer);
+  b->setKeySlice(0, TWO);
+  b->setIsRoot(true);
+  b->setLV(0, LinkOrValue(c));
 
-  c->key_len[0] = BorderNode::key_len_layer;
-  c->key_slice[0] = THREE;
-  c->version.is_root = true;
-  c->lv[0].next_layer = d;
+  c->setKeyLen(0, BorderNode::key_len_layer);
+  c->setKeySlice(0, THREE);
+  c->setIsRoot(true);
+  c->setLV(0, LinkOrValue(d));
 
-  d->key_len[0] = 8;
-  d->key_slice[0] = FOUR;
-  d->version.is_root = true;
-  d->lv[0].value = new int(9);
+  d->setKeyLen(0, 8);
+  d->setKeySlice(0, FOUR);
+  d->setIsRoot(true);
+  d->setLV(0, LinkOrValue(new int(9)));
 
   Key k({
     ONE,TWO,THREE,FOUR
@@ -409,28 +409,28 @@ TEST(RemoveTest, remove_all_layer2){
   auto c = new BorderNode;
   auto d = new BorderNode;
 
-  a->key_len[0] = BorderNode::key_len_layer;
-  a->key_slice[0] = ONE;
-  a->version.is_root = true;
-  a->lv[0].next_layer = b;
+  a->setKeyLen(0, BorderNode::key_len_layer);
+  a->setKeySlice(0, ONE);
+  a->setIsRoot(true);
+  a->setLV(0, LinkOrValue(b));
 
-  b->key_len[0] = BorderNode::key_len_layer;
-  b->key_slice[0] = TWO;
-  b->version.is_root = true;
-  b->lv[0].next_layer = c;
+  b->setKeyLen(0, BorderNode::key_len_layer);
+  b->setKeySlice(0, TWO);
+  b->setIsRoot(true);
+  b->setLV(0, LinkOrValue(c));
 
-  c->version.is_root = true;
-  c->key_len[0] = BorderNode::key_len_layer;
-  c->key_slice[0] = THREE;
-  c->lv[0].next_layer = d;
-  c->key_len[1] = 8;
-  c->key_slice[1] = FIVE;
-  c->lv[1].value = new int(8);
+  c->setIsRoot(true);
+  c->setKeyLen(0, BorderNode::key_len_layer);
+  c->setKeySlice(0, THREE);
+  c->setLV(0, LinkOrValue(d));
+  c->setKeyLen(1, 8);
+  c->setKeySlice(1, FIVE);
+  c->setLV(1, LinkOrValue(new int(8)));
 
-  d->key_len[0] = 8;
-  d->key_slice[0] = FOUR;
-  d->version.is_root = true;
-  d->lv[0].value = new int(9);
+  d->setKeyLen(0, 8);
+  d->setKeySlice(0, FOUR);
+  d->setIsRoot(true);
+  d->setLV(0, LinkOrValue(new int(9)));
 
   Key k({
     ONE,TWO,THREE,FOUR
@@ -438,7 +438,7 @@ TEST(RemoveTest, remove_all_layer2){
 
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_EQ(pair.first, NotChange);
-  EXPECT_EQ(c->key_slice[0], FIVE);
+  EXPECT_EQ(c->getKeySlice(0), FIVE);
 }
 
 TEST(RemoveTest, at_layer0_1){
@@ -446,20 +446,20 @@ TEST(RemoveTest, at_layer0_1){
   auto a = new InteriorNode;
   auto b = new BorderNode;
   auto c = new BorderNode;
-  a->key_slice[0] = 10;
-  a->child[0] = b;
-  a->child[1] = c;
-  a->n_keys = 1;
-  a->version.is_root = true;
-  b->key_len[0] = 1;
-  b->key_slice[0] = 9;
-  c->key_len[0] = 1;
-  c->key_slice[0] = 10;
+  a->setKeySlice(0, 10);
+  a->setChild(0, b);
+  a->setChild(1, c);
+  a->setNumKeys(1);
+  a->setIsRoot(true);
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, 9);
+  c->setKeyLen(0, 1);
+  c->setKeySlice(0, 10);
 
-  c->parent = a;
-  c->prev = b;
-  b->parent = a;
-  b->next = c;
+  c->setParent(a);
+  c->setPrev(b);
+  b->setParent(a);
+  b->setNext(c);
 
   Key k({9}, 1);
   auto pair = remove(a, k, nullptr, 0);
@@ -469,11 +469,11 @@ TEST(RemoveTest, at_layer0_1){
 TEST(RemoveTest, at_layer0_2){
   // rootのBorderNodeがサイズ1になった時
   auto b = new BorderNode;
-  b->key_len[0] = 1;
-  b->key_slice[0] = 9;
-  b->key_len[1] = 1;
-  b->key_slice[1] = 10;
-  b->version.is_root = true;
+  b->setKeyLen(0, 1);
+  b->setKeySlice(0, 9);
+  b->setKeyLen(1, 1);
+  b->setKeySlice(1, 10);
+  b->setIsRoot(true);
 
   Key k({9}, 1);
   auto pair = remove(b, k, nullptr, 0);

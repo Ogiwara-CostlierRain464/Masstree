@@ -44,6 +44,7 @@ public:
   }
 
   void lock(){
+    // NOTE: 論文通りの記述にとりあえず従った
     if(this == nullptr)
       return;
 
@@ -86,17 +87,17 @@ public:
     return parent.load(std::memory_order_acquire);
   }
 
-  inline void setVersion(const Version &v) {
+  inline void setVersion(Version const &v) {
     version.store(v, std::memory_order_release);
   }
 
-  inline void setParent(const std::atomic<InteriorNode *> &p) {
+  inline void setParent(InteriorNode* const &p) {
     parent.store(p, std::memory_order_release);
   }
 
   inline void setIsBorder(bool is_border){
     auto v = getVersion();
-    v.is_border = true;
+    v.is_border = is_border;
     setVersion(v);
   }
 
@@ -108,14 +109,14 @@ public:
 
   inline void setIsRoot(bool is_root){
     auto v = getVersion();
-    v.is_root = true;
+    v.is_root = is_root;
     setVersion(v);
   }
 
   [[nodiscard]]
   inline bool getIsRoot() const{
     auto v = getVersion();
-    return v.is_border;
+    return v.is_root;
   }
 
   [[nodiscard]]
@@ -131,13 +132,13 @@ public:
 
   inline void setSplitting(bool splitting){
     auto v = getVersion();
-    v.splitting = true;
+    v.splitting = splitting;
     setVersion(v);
   }
 
   inline void setInserting(bool inserting){
     auto v = getVersion();
-    v.inserting = true;
+    v.inserting = inserting;
     setVersion(v);
   }
 

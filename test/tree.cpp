@@ -25,9 +25,9 @@ TEST(TreeTest, findChild1){
   InteriorNode n;
   DummyNode dn{0};
 
-  n.child[0] = &dn;
-  n.n_keys = 1;
-  n.key_slice[0] = 0x01;
+  n.setChild(0, &dn);
+  n.setNumKeys(1);
+  n.setKeySlice(0, 0x01);
 
   auto n1 = reinterpret_cast<DummyNode *>(n.findChild(0x00));
   EXPECT_EQ(n1->value, 0);
@@ -44,10 +44,10 @@ TEST(TreeTest, findChild2){
   DummyNode dn0{0};
   DummyNode dn2{2};
 
-  n.n_keys = 1;
-  n.child[0] = &dn0;
-  n.key_slice[0] = 0x01;
-  n.child[1] = &dn2;
+  n.setNumKeys(1);
+  n.setChild(0, &dn0);
+  n.setKeySlice(0, 0x01);
+  n.setChild(1, &dn2);
 
   auto n1 = reinterpret_cast<DummyNode *>(n.findChild(0x01));
   EXPECT_EQ(n1->value, 2);
@@ -58,7 +58,7 @@ TEST(TreeTest, sample2){
   Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
 
   auto b = findBorder(root, key);
-  EXPECT_EQ(*reinterpret_cast<int *>(b.first->lv[0].value), 1);
+  EXPECT_EQ(*reinterpret_cast<int *>(b.first->getLV(0).value), 1);
 }
 
 TEST(TreeTest, sample3){
@@ -66,7 +66,7 @@ TEST(TreeTest, sample3){
   Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
 
   auto b = findBorder(root, key);
-  EXPECT_EQ(b.first->key_len[0], BorderNode::key_len_layer);
+  EXPECT_EQ(b.first->getKeyLen(0), BorderNode::key_len_layer);
 }
 
 TEST(TreeTest, get1){
