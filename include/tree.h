@@ -44,10 +44,9 @@ public:
   }
 
   void lock(){
-    // NOTE: 論文通りの記述にとりあえず従った
-    if(this == nullptr)
-      return;
-
+//    // NOTE: 論文通りの記述にとりあえず従った
+//    if(this == nullptr)
+//      return;
     for(;;){
       auto expected = getVersion();
       auto desired = expected;
@@ -73,9 +72,13 @@ public:
     setVersion(copy_v);
   }
 
+  [[nodiscard]]
   InteriorNode* lockedParent() const{
   retry:
-    auto p = reinterpret_cast<Node *>(getParent()); p->lock();
+    auto p = reinterpret_cast<Node *>(getParent());
+    if(p != nullptr){
+      p->lock();
+    }
     if(p != reinterpret_cast<Node *>(getParent())){
       p->unlock(); goto retry;
     }
