@@ -247,7 +247,7 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
   if(new_slice < min_slice){
     return 1;
   } else if(new_slice == min_slice){
-    return table[1].second;
+    return table[1].second + 1;
   } else if(min_slice < new_slice and new_slice < max_slice){
     if(std::count(found.begin(), found.end(), new_slice)){ // new_sliceが存在していたなら
       for(size_t i = 0; i < table.size(); ++i){
@@ -258,7 +258,7 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
     }else{
       for(size_t i = 0; i < table.size(); ++i){
         if(table[i].first > new_slice){
-          return table[i].second;
+          return table[i].second + 1;
         }
       }
     }

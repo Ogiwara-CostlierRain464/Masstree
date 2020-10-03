@@ -187,9 +187,9 @@ TEST(PutTest, slice_table){
   EXPECT_EQ(found[2], FOUR);
 
   EXPECT_EQ(split_point(AB, table, found), 1);
-  EXPECT_EQ(split_point(ONE, table, found), 5);
+  EXPECT_EQ(split_point(ONE, table, found), 5 + 1);
   EXPECT_EQ(split_point(TWO, table, found), 5);
-  EXPECT_EQ(split_point(THREE, table, found), 10);
+  EXPECT_EQ(split_point(THREE, table, found), 10 + 1);
   EXPECT_EQ(split_point(FOUR, table, found), 10);
   EXPECT_EQ(split_point(FIVE, table, found), 15);
 }
@@ -267,6 +267,6 @@ TEST(PutTest, split_keys_among2){
 
   Key k({112, AB}, 10);
   split_keys_among(&n, &n1, k, &i);
-  EXPECT_EQ(n.getKeyLen(8), 0);
+  EXPECT_EQ(n.getKeyLen(8), 9);
   EXPECT_EQ(n1.getKeySuffixes().get(1), nullptr);
 }
