@@ -32,7 +32,7 @@ struct Version{
     };
   };
 
-  Version()
+  Version() noexcept
     : locked{false}
     , inserting{false}
     , splitting{false}
