@@ -540,7 +540,7 @@ public:
   /**
    * このBorderNodeをdeleteする前に呼ばれる。
    */
-  void connectPrevAndNext() const{
+  void connectPrevAndNext(){
     auto next_ = getNext();
     auto prev_ = getPrev();
 
@@ -550,6 +550,9 @@ public:
     if(prev_ != nullptr){
       prev_->setNext(next_);
     }
+
+    setNext(nullptr);
+    setPrev(nullptr);
   }
 
   void printNode() const{
@@ -612,7 +615,7 @@ public:
     return next.load(std::memory_order_acquire);
   }
 
-  inline void setNext(BorderNode* const &next_){
+  inline void setNext(BorderNode* next_){
     next.store(next_, std::memory_order_release);
   }
 
@@ -621,7 +624,7 @@ public:
     return prev.load(std::memory_order_acquire);
   }
 
-  inline void setPrev(BorderNode* const &prev_){
+  inline void setPrev(BorderNode* prev_){
     prev.store(prev_, std::memory_order_release);
   }
 
@@ -656,8 +659,8 @@ private:
   std::atomic<Permutation> permutation = {};
   std::array<std::atomic<uint64_t>, ORDER - 1> key_slice = {};
   std::array<std::atomic<LinkOrValue>, ORDER - 1> lv = {};
-  std::atomic<BorderNode*> next = nullptr;
-  std::atomic<BorderNode*> prev = nullptr;
+  std::atomic<BorderNode*> next{nullptr};
+  std::atomic<BorderNode*> prev{nullptr};
   KeySuffix key_suffixes = {};
 };
 

@@ -234,7 +234,7 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
     Alloc::decValue();
 #endif
 
-    for(size_t i = index; i <= n_num_keys - 1; ++i){ // i=0~13 左シフト
+    for(size_t i = index; i + 1 <= n_num_keys - 1; ++i){ // i=0~13 左シフト
       n->setKeyLen(i, n->getKeyLen(i+1));
       n->setKeySlice(i, n->getKeySlice(i+1));
       n->getKeySuffixes().set(i, n->getKeySuffixes().get(i+1));

@@ -9,9 +9,9 @@ KeySlice arr[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x
 
 Key *make_key(){
   std::vector<KeySlice> vec{};
-  size_t slices_len = (rand() % 1)+3;
+  size_t slices_len = 1;
   for(size_t i = 1; i <= slices_len; ++i){
-    auto slice = arr[rand() % 2];
+    auto slice = rand() % 10000;
     vec.push_back(slice);
   }
   auto length = (slices_len-1) * 8 + (rand() % 8) + 1;
@@ -22,7 +22,7 @@ void w1(){
   auto seed = time(0);
   srand(seed);
 
-  constexpr size_t COUNT = 50000;
+  constexpr size_t COUNT = 90000;
 
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
@@ -59,9 +59,10 @@ void loop(){
 
 
 int main(){
-  std::thread a(loop);
-
-  a.join();
+//  std::thread a(loop);
+//
+//  a.join();
+  loop();
 
   // interiorがちゃんとカウントできてないぽい！keyの生成が悪かった？次回ちゃんとテスト
 }

@@ -127,8 +127,8 @@ TEST(PutTest, split_keys_among1){
   p.setKeySlice(12, 13);
   p.setKeySlice(13, 14);
   p.setKeySlice(14, 15);
-
-  split_keys_among(&p, &p1, 8, &n1, 7);
+  std::optional<KeySlice> k_prime{};
+  split_keys_among(&p, &p1, 8, &n1, 7, k_prime);
   EXPECT_EQ(p.getNumKeys(), 7);
   EXPECT_EQ(p.getKeySlice(7), 0);
   EXPECT_EQ(p.getChild(8), nullptr);

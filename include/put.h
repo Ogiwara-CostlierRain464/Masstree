@@ -8,7 +8,7 @@
 namespace masstree{
 
 static BorderNode *start_new_tree(const Key &key, void *value){
-  auto root = new BorderNode;
+  auto root = new BorderNode{};
 #ifndef NDEBUG
   Alloc::incBorder();
 #endif
@@ -71,7 +71,7 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
     * @see §4.6.3
     */
     border->lock();
-    auto n1 = new BorderNode;
+    auto n1 = new BorderNode{};
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
@@ -187,8 +187,10 @@ static size_t cut(size_t len){
  * @param slice
  * @param n1
  */
-static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index){
+static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index, std::optional<KeySlice> &k_prime){
   assert(!p->isNotFull());
+  assert(!p->getIsRoot());
+  assert(!p1->getIsRoot());
 
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};
@@ -217,6 +219,7 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
     p->incNumKeys();
   }
   p->setChild(i, temp_child[i]);
+  k_prime = temp_key_slice[split - 1];
   for(++i, j = 0; i < Node::ORDER; ++i, ++j){
     p1->setChild(j, temp_child[i]);
     p1->setKeySlice(j, temp_key_slice[i]);
@@ -360,8 +363,11 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
   }
 
   n1->setNext(n->getNext());
-  n->setNext(n1);
   n1->setPrev(n);
+  n->setNext(n1);
+  if(n1->getNext() != nullptr){
+    n1->getNext()->setPrev(n1);
+  }
   n1->setParent(n->getParent());
 }
 
@@ -375,7 +381,9 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *
  * @return
  */
 static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
-  auto root = new InteriorNode;
+  assert(!left->getIsRoot());
+  assert(!right->getIsRoot());
+  auto root = new InteriorNode{};
 #ifndef NDEBUG
   Alloc::incInterior();
 #endif
@@ -429,7 +437,7 @@ static KeySlice get_most_left_slice(Node *n){
 static Node *split(Node *n, const Key &k, void *value){
   // precondition: n locked.
   assert(n->getLocked());
-  Node *n1 = new BorderNode;
+  Node *n1 = new BorderNode{};
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
@@ -441,11 +449,12 @@ static Node *split(Node *n, const Key &k, void *value){
   split_keys_among(
     reinterpret_cast<BorderNode *>(n),
     reinterpret_cast<BorderNode *>(n1), k, value);
-  ascend:
+  std::optional<KeySlice> pull_up = std::nullopt;
+ascend:
   InteriorNode *p = n->lockedParent();
-  auto mostLeft = get_most_left_slice(n1);
   if(p == nullptr){
-    p = create_root_with_children(n, mostLeft, n1);
+    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
+    p = create_root_with_children(n, up, n1);
     n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
     n1->unlock();
@@ -453,27 +462,31 @@ static Node *split(Node *n, const Key &k, void *value){
   }else if(p->isNotFull()){
     p->setInserting(true);
     size_t n_index = p->findChildIndex(n);
-    insert_into_parent(p, n1, mostLeft ,n_index);
+    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
+    insert_into_parent(p, n1, up ,n_index);
     n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
     n1->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
     p->unlock();
     return nullptr;
-  }else{
+  }else{ // pはfull
     p->setSplitting(true);
+    // rootではなくなる、もしくはrootになりえない。
+    p->setIsRoot(false);
     size_t n_index = p->findChildIndex(n);
     std::atomic_thread_fence(std::memory_order_acq_rel);
     n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
-    Node *p1 = new InteriorNode;
+    Node *p1 = new InteriorNode{};
 #ifndef NDEBUG
     Alloc::incInterior();
 #endif
     p1->setVersion(p->getVersion());
+    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),
-      reinterpret_cast<InteriorNode *>(p1), mostLeft, n1, n_index);
+      reinterpret_cast<InteriorNode *>(p1), up, n1, n_index, pull_up);
     n1->unlock(); n = p; n1 = p1; goto ascend;
   }
 }
