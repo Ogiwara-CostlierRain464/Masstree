@@ -30,8 +30,9 @@ TEST(PermutationTest, getKeyIndex){
   EXPECT_EQ(p.getKeyIndex(2), 2);
 
   p.setKeyIndex(1,4);
+  p.setKeyIndex(2,1);
   EXPECT_EQ(p.getNumKeys(), 3);
   EXPECT_EQ(p.getKeyIndex(0), 3);
   EXPECT_EQ(p.getKeyIndex(1), 4);
-  EXPECT_EQ(p.getKeyIndex(2), 2);
+  EXPECT_EQ(p.getKeyIndex(2), 1);
 }

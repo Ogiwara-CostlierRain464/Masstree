@@ -32,7 +32,6 @@ struct Permutation{
     auto middle = index * (1LL << (15-i)*4);
     body =  left | middle | right;
   }
-
 };
 
 }
