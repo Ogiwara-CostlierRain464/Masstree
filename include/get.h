@@ -13,10 +13,10 @@ static void *get(Node *root, Key &k){
   if(v.deleted)
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
-  if((n->version ^ v) > Version::lock){
-    v = stableVersion(n); auto next = n->next;
+  if((n->getVersion() ^ v) > Version::lock){
+    v = n->stableVersion(); auto next = n->getNext();
     while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
-      n = next; v = stableVersion(n); next = n->next;
+      n = next; v = n->stableVersion(); next = n->getNext();
     }
     goto forward;
   }else if(t == NOTFOUND){

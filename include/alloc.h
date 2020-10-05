@@ -49,7 +49,9 @@ public:
     std::cout << "Border±: " << inc_border_node - dec_border_node << std::endl;
     std::cout << "Interior±: " << inc_interior_node - dec_interior_node << std::endl;
     std::cout << "Suffix±: " << inc_big_suffix - dec_big_suffix << std::endl;
-    std::cout << "ValueDec: " << dec_value << std::endl;
+//    std::cout << "ValueDec: " << dec_value << std::endl;
+    std::cout << "Interior: " << inc_interior_node << std::endl;
+
   }
 
   static void reset(){
