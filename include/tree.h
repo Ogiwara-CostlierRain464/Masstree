@@ -683,7 +683,7 @@ static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
   auto interior_n = reinterpret_cast<InteriorNode *>(n);
   auto n1 = interior_n->findChild(key.getCurrentSlice().slice);
   Version v1 = n1->stableVersion();
-  if((n->getVersion() ^ v) <= Version::lock){
+  if((n->getVersion() ^ v) <= Version::has_locked){
     n = n1; v = v1; goto descend;
   }
   auto v2 = n->stableVersion();

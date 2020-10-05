@@ -14,8 +14,11 @@ struct Version{
 
   /**
    * 論文中の"locked"に対応する。
+   * versionの前後のスナップショットに対して排他論理和を取り、
+   * bit列に変化があれば「他のthreadがlockを取った、もしくはlockを取った後に外した」
+   * と判断する。
    */
-  static constexpr uint32_t lock = 0b1000'0000'0000'0000'0000'0000'0000'0000;
+  static constexpr uint32_t has_locked = 0;
 
   union {
     uint32_t body;

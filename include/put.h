@@ -518,7 +518,7 @@ static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);
   auto index = std::get<2>(t_lv_i);
-  if((n->getVersion() ^ v) > Version::lock){
+  if((n->getVersion() ^ v) > Version::has_locked){
     v = n->stableVersion(); auto next = n->getNext();
     while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
       n = next; v = n->stableVersion(); next = n->getNext();

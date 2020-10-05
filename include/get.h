@@ -13,7 +13,7 @@ static Value *get(Node *root, Key &k){
   if(v.deleted)
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
-  if((n->getVersion() ^ v) > Version::lock){
+  if((n->getVersion() ^ v) > Version::has_locked){
     v = n->stableVersion(); auto next = n->getNext();
     while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
       n = next; v = n->stableVersion(); next = n->getNext();
