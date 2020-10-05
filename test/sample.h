@@ -24,7 +24,7 @@ static Node *sample2(){
 
   root->setKeyLen(0, BorderNode::key_len_has_suffix);
   root->setKeySlice(0, 0x0001020304050607);
-  Key key({0x0001'0203'0405'0607, 0x0A0B'0000'0000'0000}, 10);
+  Key key({0x0001'0203'0405'0607, 0x0A0B'0000'0000'0000}, 2);
   root->getKeySuffixes().set(0,key,1);
   root->setLV(0, LinkOrValue(new int(1)));
   root->setIsRoot(true);
@@ -133,13 +133,13 @@ static std::pair<Key, Key> not_conflict_89(){
   Key k8({
     ONE,
     TWO
-  }, 8 * 2);
+  }, 8);
 
   Key k9({
     ONE,
     TWO,
     AB
-  }, 16 + 2);
+  }, 2);
 
   return std::pair(k8, k9);
 }
@@ -149,12 +149,12 @@ static std::pair<Key, Key> conflicting(){
     ONE,
     TWO,
     AB
-  }, 16 + 2);
+  }, 2);
   Key k2({
     ONE,
     TWO,
     CD
-  }, 16 + 2);
+  }, 2);
   return std::pair(k1, k2);
 }
 

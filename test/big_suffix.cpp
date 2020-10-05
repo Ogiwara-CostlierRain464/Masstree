@@ -16,7 +16,7 @@ TEST(BigSuffixTest, from){
       TWO,
       THREE,
       AB
-    }, 26);
+    }, 2);
 
     suffix = BigSuffix::from(k, 1);
   }
@@ -44,7 +44,7 @@ TEST(BigSuffixTest, isSame){
     TWO,
     ONE,
     AB
-  }, 34);
+  }, 2);
 
   EXPECT_TRUE(suffix.isSame(k, 2));
 
@@ -56,7 +56,7 @@ TEST(BigSuffixTest, isSame){
   Key k1({
     TWO,
     AB
-  }, 12);
+  }, 4);
 
   EXPECT_FALSE(suffix1.isSame(k1, 0));
 }

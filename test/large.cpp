@@ -18,7 +18,7 @@ void make_key(Key *k){
     auto slice = arr[rand() % 5];
     k->slices.push_back(slice);
   }
-  k->length = slices_len * 8;
+  k->lastSliceSize = 8;
 }
 
 static BorderNode *to_b(Node *n){

@@ -33,10 +33,11 @@ struct SliceWithSize{
 /**
  * Keyを表す。
  * 状態をもち、Iteratorとしての機能も持たせる。
+ * 一つのthreadのみが扱うので、thread-safeである必要はない。
  */
 struct Key {
   std::vector<KeySlice> slices;
-  size_t length = 0;
+  size_t lastSliceSize = 0;
   size_t cursor = 0;
 
   Key() = default;
@@ -45,10 +46,9 @@ struct Key {
   Key &operator=(const Key& other) = default;
   Key &operator=(Key&& other) = default;
 
-  Key(std::vector<KeySlice> slices_, size_t len) noexcept
-    : slices(std::move(slices_)), length(len) {
-    assert((slices.size() - 1) * 8 <= length
-    and length <= slices.size() * 8);
+  Key(std::vector<KeySlice> slices_, size_t lastSliceSize_) noexcept
+    : slices(std::move(slices_)), lastSliceSize(lastSliceSize_) {
+    assert(1 <= lastSliceSize and lastSliceSize <= 8);
   }
 
   [[nodiscard]]
@@ -68,16 +68,7 @@ struct Key {
   size_t remainLength(size_t from) const{
     assert(from <= slices.size() - 1);
 
-    return length - from * 8;
-  }
-
-  [[nodiscard]]
-  size_t lastSliceSize() const{
-    if(length % 8 == 0){
-      return 8;
-    }else{
-      return length % 8;
-    }
+    return (slices.size() - from - 1)*8 + lastSliceSize;
   }
 
   [[nodiscard]]
@@ -85,7 +76,7 @@ struct Key {
     if (hasNext()) {
       return 8;
     }else{
-      return length - (slices.size() - 1) * 8;
+      return lastSliceSize;
     }
   }
 
@@ -109,7 +100,7 @@ struct Key {
   }
 
   bool operator==(const Key &rhs) const{
-    return length == rhs.length
+    return lastSliceSize == rhs.lastSliceSize
     && cursor == rhs.cursor
     && slices == rhs.slices;
   }

@@ -13,7 +13,7 @@ Key k({
   THREE,
   FOUR,
   AB
-  }, 42);
+  }, 2);
 
 EXPECT_EQ(k.remainLength(3), 18);
 }
@@ -22,11 +22,11 @@ TEST(KeyTest, equal){
   Key a({
   TWO,
   ONE
-  },15);
+  },7);
   Key b({
     TWO,
     ONE
-  },16);
+  },8);
 
   EXPECT_FALSE(a == b);
 }
@@ -35,10 +35,10 @@ TEST(KeyTest, lastSliceSize){
   Key a({
     TWO,
     ONE
-    },15);
+    },7);
 
 
-  EXPECT_EQ(a.lastSliceSize(), 7);
+  EXPECT_EQ(a.lastSliceSize, 7);
 }
 
 TEST(KeyTest, getCurrentSlice){
@@ -46,7 +46,7 @@ TEST(KeyTest, getCurrentSlice){
     TWO,
     EIGHT,
     ONE
-    },20);
+    },4);
 
   a.next();
   EXPECT_EQ(a.getCurrentSlice().slice, EIGHT);

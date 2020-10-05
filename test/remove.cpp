@@ -396,7 +396,7 @@ TEST(RemoveTest, remove_all_layer){
 
   Key k({
     ONE,TWO,THREE,FOUR
-  }, 32);
+  }, 8);
 
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_EQ(pair.first, LayerDeleted);
@@ -434,7 +434,7 @@ TEST(RemoveTest, remove_all_layer2){
 
   Key k({
     ONE,TWO,THREE,FOUR
-  }, 32);
+  }, 8);
 
   auto pair = remove(a, k, nullptr, 0);
   EXPECT_EQ(pair.first, NotChange);

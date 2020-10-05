@@ -351,7 +351,7 @@ public:
 #ifndef NDEBUG
     Alloc::incSuffix();
 #endif
-    return new BigSuffix(std::move(tmp), key.lastSliceSize());
+    return new BigSuffix(std::move(tmp), key.lastSliceSize);
   }
 
 private:

@@ -28,12 +28,12 @@ TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
   EXPECT_EQ(std::get<0>(tuple), ExtractResult::VALUE);
   EXPECT_EQ(std::get<1>(tuple).value, &i);
   EXPECT_EQ(std::get<2>(tuple), 0);
-  Key k2({ONE, TWO}, 10);
+  Key k2({ONE, TWO}, 2);
   auto tuple2 = borderNode.extractLinkOrValueWithIndexFor(k2);
   EXPECT_EQ(std::get<0>(tuple2), ExtractResult::VALUE);
   EXPECT_EQ(std::get<1>(tuple2).value, &i);
   EXPECT_EQ(std::get<2>(tuple2), 1);
-  Key k3({TWO, THREE}, 16);
+  Key k3({TWO, THREE}, 8);
   auto tuple3 = borderNode.extractLinkOrValueWithIndexFor(k3);
   EXPECT_EQ(std::get<0>(tuple3), ExtractResult::LAYER);
   EXPECT_EQ(std::get<1>(tuple3).next_layer, &next_layer);

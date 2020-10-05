@@ -16,7 +16,7 @@ TEST(PutTest, start_new_tree){
   EXPECT_EQ(root->getKeyLen(0), 8);
   EXPECT_EQ(root->getKeySlice(0), ONE);
 
-  Key k2({ONE, AB}, 11);
+  Key k2({ONE, AB}, 3);
   auto root2 = start_new_tree(k2, &i);
   EXPECT_EQ(root2->getKeyLen(0), BorderNode::key_len_has_suffix);
   EXPECT_EQ(root->getKeySlice(0), ONE);
@@ -25,7 +25,7 @@ TEST(PutTest, start_new_tree){
 
 TEST(PutTest, check_break_invariant){
   BorderNode border{};
-  Key k({ONE, AB}, 10);
+  Key k({ONE, AB}, 2);
   EXPECT_EQ(check_break_invariant(&border, k), std::nullopt);
   border.setKeyLen(1, BorderNode::key_len_has_suffix);
   border.setKeySlice(1, TWO);
@@ -50,7 +50,7 @@ TEST(PutTest, handle_break_invariant){
   borderNode.getKeySuffixes().set(1, suffix);
   borderNode.setLV(1, LinkOrValue(&i));
   int j = 5;
-  Key k({EIGHT, ONE, TWO, CD}, 26);
+  Key k({EIGHT, ONE, TWO, CD}, 2);
   handle_break_invariant(&borderNode, k, &j, 1);
 
   ASSERT_EQ(borderNode.getKeyLen(1), BorderNode::key_len_layer);
@@ -87,7 +87,7 @@ TEST(PutTest, insert_into_border){
   border.setKeySlice(3, FIVE);
   border.setLV(3, LinkOrValue(&i));
 
-  Key k({TWO, FIVE}, 16);
+  Key k({TWO, FIVE}, 8);
   insert_into_border(&border, k, &i);
 
   EXPECT_EQ(border.getKeyLen(1), BorderNode::key_len_has_suffix);
@@ -265,7 +265,7 @@ TEST(PutTest, split_keys_among2){
   n.setKeySlice(14, 114);
   n.setLV(14, LinkOrValue(&i));
 
-  Key k({112, AB}, 10);
+  Key k({112, AB}, 2);
   split_keys_among(&n, &n1, k, &i);
   EXPECT_EQ(n.getKeyLen(8), 9);
   EXPECT_EQ(n1.getKeySuffixes().get(1), nullptr);

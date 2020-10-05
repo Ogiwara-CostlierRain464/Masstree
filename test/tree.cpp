@@ -55,7 +55,7 @@ TEST(TreeTest, findChild2){
 
 TEST(TreeTest, sample2){
   auto root = sample2();
-  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
+  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 2);
 
   auto b = findBorder(root, key);
   EXPECT_EQ(*reinterpret_cast<int *>(b.first->getLV(0).value), 1);
@@ -63,7 +63,7 @@ TEST(TreeTest, sample2){
 
 TEST(TreeTest, sample3){
   auto root = sample3();
-  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
+  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 2);
 
   auto b = findBorder(root, key);
   EXPECT_EQ(b.first->getKeyLen(0), BorderNode::key_len_layer);
@@ -71,7 +71,7 @@ TEST(TreeTest, sample3){
 
 TEST(TreeTest, get1){
   auto root = sample2();
-  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 10);
+  Key key({0x0001020304050607, 0x0A0B'0000'0000'0000}, 2);
 
   auto p = get(root, key);
 
@@ -81,7 +81,7 @@ TEST(TreeTest, get1){
 
 TEST(TreeTest, get2){
   auto root = sample3();
-  Key key({0x0001020304050607, 0x0C0D'0000'0000'0000}, 10);
+  Key key({0x0001020304050607, 0x0C0D'0000'0000'0000}, 2);
 
   auto p = get(root, key);
 
@@ -122,7 +122,7 @@ TEST(TreeTest, start_new_tree){
     0x0102030405060708,
     0x0102030405060708,
     0x1718190000000000
-  }, 27);
+  }, 3);
   auto root = start_new_tree(key, new int(100));
   auto p = get(root, key);
   assert(p != nullptr);
@@ -133,7 +133,7 @@ TEST(TreeTest, insert){
   Key key1({
     0x0102030405060708,
     0x0A0B000000000000
-  }, 10);
+  }, 2);
   Key key2({
     0x1112131415161718
   }, 8);
@@ -172,12 +172,12 @@ TEST(TreeTest, split){
 
 TEST(TreeTest, break_invariant){
   auto root = sample2();
-  Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
+  Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 2);
   // kがここで変わってしまう。
   put(root, k, new int(3), nullptr, 0);
 
 
-  Key k2({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 10);
+  Key k2({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 2);
   auto p = get(root, k2);
   assert(p != nullptr);
   EXPECT_EQ(*reinterpret_cast<int *>(p),3);
@@ -191,14 +191,14 @@ TEST(TreeTest, break_invariant2){
     0x2222'2222'2222'2222,
     0x3333'3333'3333'3333,
     0x0A0B'0000'0000'0000
-  },34);
+  },2);
   root = put(root, k, new int(1), nullptr, 0);
   Key k1({
     0x8888'8888'8888'8888,
     0x1111'1111'1111'1111,
     0x2222'2222'2222'2222,
     0x0C0D'0000'0000'0000
-  },26);
+  },2);
   root = put(root, k1, new int(2), nullptr, 0);
   // Key is mutable, but you can reset cursor.
   k1.cursor = 0;
@@ -227,7 +227,7 @@ TEST(TreeTest, p){
   Key k6({slice}, 6);
   Key k7({slice}, 7);
   Key k8({slice}, 8);
-  Key k9({slice, CD}, 10);
+  Key k9({slice, CD}, 2);
 
   auto root = put(nullptr, k1, new int(1), nullptr, 0);
   root = put(root, k2, new int(2), nullptr, 0);
@@ -249,16 +249,16 @@ TEST(TreeTest, duplex){
     EIGHT,
     EIGHT,
     CD
-  },18);
+  },2);
   Key k1({
     EIGHT,
     AB
-  },10);
+  },2);
   Key k2({
     EIGHT,
     EIGHT,
     CD
-  },18);
+  },2);
 
   Node *root = nullptr;
   root = put(root, k, new int(4), nullptr, 0);
@@ -273,11 +273,11 @@ TEST(TreeTest, layer_change){
   Node *root = nullptr;
   Key k1({
     ONE, TWO, FIVE
-  }, 24);
+  }, 8);
   root = put_at_layer0(root, k1, new int(5));
   Key k2({
     ONE, TWO, THREE, FOUR
-  }, 32);
+  }, 8);
   root = put_at_layer0(root, k2, new int(4));
 
   k1.reset();

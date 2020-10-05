@@ -11,8 +11,8 @@ Key *make_key(){
     auto slice = rand() % 10000;
     vec.push_back(slice);
   }
-  auto length = (slices_len-1) * 8 + (rand() % 8) + 1;
-  return new Key(vec, length);
+  auto lastSize = (rand() % 8) + 1;
+  return new Key(vec, lastSize);
 }
 
 int main(){
@@ -26,7 +26,7 @@ int main(){
     std::array<Key*, COUNT> inserted_keys{};
     for(size_t i = 0; i < COUNT; ++i){
       auto k = make_key();
-      root = put_at_layer0(root, *k, new int(k->length));
+      root = put_at_layer0(root, *k, new int(k->remainLength(0)));
 
       k->reset();
       inserted_keys[i] = k;
@@ -36,7 +36,7 @@ int main(){
       auto k = inserted_keys[i];
       auto p = get(root, *k);
 //      assert(*reinterpret_cast<int *>(p) == k->length);
-      if(*reinterpret_cast<int *>(p) != k->length){
+      if(*reinterpret_cast<int *>(p) != k->remainLength(0)){
         exit(-1);
       }
 
