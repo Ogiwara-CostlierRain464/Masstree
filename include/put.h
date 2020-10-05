@@ -40,7 +40,7 @@ static BorderNode *start_new_tree(const Key &key, Value *value){
 static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
-    for (size_t i = 0; i < borderNode->numberOfKeys(); ++i) {
+    for (size_t i = 0; i < borderNode->getPermutation().getNumKeys(); ++i) {
       if ((borderNode->getKeyLen(i) == BorderNode::key_len_has_suffix
            || borderNode->getKeyLen(i) == BorderNode::key_len_layer)
           && borderNode->getKeySlice(i) == cursor.slice
@@ -120,10 +120,11 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
  * @param value
  */
 static void insert_into_border(BorderNode *border, Key &key, Value *value){
-  assert(border->isNotFull());
+  auto p = border->getPermutation();
+  assert(p.isNotFull());
 
   size_t insertion_point = 0;
-  size_t num_keys = border->numberOfKeys();
+  size_t num_keys = p.getNumKeys();
   auto cursor = key.getCurrentSlice();
   while (insertion_point < num_keys
          && border->getKeySlice(insertion_point) < cursor.slice){ // NOTE: ここで、size見ないの？
@@ -234,7 +235,8 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
 
 
 static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
-  assert(!n->isNotFull());
+  auto p = n->getPermutation();
+  assert(!p.isNotFull());
   for(size_t i = 0; i < Node::ORDER - 1; ++i){
     if(!std::count(found.begin(), found.end(), n->getKeySlice(i))){ // NOT FOUND
       table.emplace_back(n->getKeySlice(i), i);
@@ -287,7 +289,8 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
  * @param value
  */
 static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value *value){
-  assert(!n->isNotFull());
+  auto p = n->getPermutation();
+  assert(!p.isNotFull());
 
   uint8_t temp_key_len[Node::ORDER] = {};
   uint64_t temp_key_slice[Node::ORDER] = {};
@@ -301,7 +304,7 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
   }
 
   // 16個分、tempにコピー
-  for(size_t i = 0, j = 0; i < n->numberOfKeys(); ++i, ++j){
+  for(size_t i = 0, j = 0; i < p.getNumKeys(); ++i, ++j){
     if(j == insertion_index) ++j;
     temp_key_len[j] = n->getKeyLen(i);
     temp_key_slice[j] = n->getKeySlice(i);
@@ -509,9 +512,10 @@ static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size
     assert(upper_layer == nullptr);
     return start_new_tree(k, value);
   }
-  retry:
+retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
+  auto p = n->getPermutation();
+forward:
   if(v.deleted)
     goto retry;
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
@@ -530,7 +534,7 @@ static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size
     if(check){
       handle_break_invariant(n, k, value, check.value());
     }else{
-      if(n->isNotFull()){
+      if(p.isNotFull()){
         insert_into_border(n, k, value);
       }else{
         n->lock();

@@ -16,8 +16,9 @@ enum RootChange : uint8_t {
 };
 
 static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
+  auto p = n->getPermutation();
   assert(n->getParent() == nullptr);
-  assert(n->numberOfKeys() == 1);
+  assert(p.getNumKeys() == 1);
   assert(n->getIsRoot());
   assert(upper_layer != nullptr);
 
@@ -58,7 +59,8 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
  * @return new root
  */
 static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
-  assert(n->numberOfKeys() == 0);
+  auto per = n->getPermutation();
+  assert(per.getNumKeys() == 0);
 
   if(n->getIsRoot()){
     // Layer 0以外ではここには到達しない
@@ -214,12 +216,13 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
      * NOTE: どのケースにおいても、先に親としてのinteriorに先に
      * ロックをかける必要がありそうだ
      */
-    if(n->getIsRoot() and n->numberOfKeys() == 1 and upper_layer != nullptr){
+    auto p = n->getPermutation();
+    if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       handle_delete_layer_in_remove(n, upper_layer, upper_index);
       return std::make_pair(LayerDeleted, nullptr);
     }
 
-    auto n_num_keys = n->numberOfKeys();
+    auto n_num_keys = p.getNumKeys();
     auto suffix = n->getKeySuffixes().get(index);
     if(suffix != nullptr){
       assert(n->getKeyLen(index) == BorderNode::key_len_has_suffix);
@@ -246,7 +249,7 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
     n->setLV(n_num_keys-1, LinkOrValue{});
 
 
-    auto current_num_keys = n->numberOfKeys();
+    auto current_num_keys = p.getNumKeys();
 
     if(current_num_keys == 0){
       auto pair = delete_border_node_in_remove(n, upper_layer, upper_index);

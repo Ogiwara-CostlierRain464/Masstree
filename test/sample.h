@@ -144,19 +144,29 @@ static std::pair<Key, Key> not_conflict_89(){
   return std::pair(k8, k9);
 }
 
-static std::pair<Key, Key> conflicting(){
-  Key k1({
-    ONE,
-    TWO,
-    AB
-  }, 2);
-  Key k2({
-    ONE,
-    TWO,
-    CD
-  }, 2);
-  return std::pair(k1, k2);
-}
+static void skipped_border(BorderNode &n){
+  n.setKeyLen(0, 5);
+  n.setKeySlice(0, 2);
+  n.setKeyLen(1, 7);
+  n.setKeySlice(1, 2);
+  n.setKeyLen(2, 0);
+  n.setKeySlice(2, 0);
 
+  n.setKeyLen(3, 1);
+  n.setKeySlice(3, 1);
+  n.setKeyLen(4, 2);
+  n.setKeySlice(4, 1);
+  n.setKeyLen(5, 8);
+  n.setKeySlice(5, 1);
+
+  Permutation p;
+  p.setKeyIndex(0,3);
+  p.setKeyIndex(1,4);
+  p.setKeyIndex(2,5);
+  p.setKeyIndex(3,0);
+  p.setKeyIndex(4,1);
+  p.setNumKeys(5);
+  n.setPermutation(p);
+}
 
 #endif //MASSTREE_SAMPLE_H

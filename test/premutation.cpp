@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include "../include/permutation.h"
+#include "../include/tree.h"
+#include "sample.h"
 
 using namespace masstree;
 
@@ -36,3 +37,30 @@ TEST(PermutationTest, getKeyIndex){
   EXPECT_EQ(p.getKeyIndex(1), 4);
   EXPECT_EQ(p.getKeyIndex(2), 1);
 }
+
+TEST(PermutationTest, util){
+  Permutation p{};
+  p.setNumKeys(1);
+  p.setKeyIndex(0, 3);
+  EXPECT_EQ(p(0), 3);
+}
+
+TEST(PermutationTest, extractLinkOrValueWithIndexFor){
+
+  BorderNode n;
+  skipped_border(n);
+
+  Key k({1}, 2);
+  auto tuple = n.extractLinkOrValueWithIndexFor(k);
+  EXPECT_EQ(std::get<2>(tuple), 4);
+}
+
+TEST(PermutationTest, firstUnusedSlotIndex){
+
+  BorderNode n;
+  skipped_border(n);
+  EXPECT_EQ(n.firstUnusedSlotIndex(), 2);
+}
+
+
+

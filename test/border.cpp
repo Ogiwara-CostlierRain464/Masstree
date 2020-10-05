@@ -45,6 +45,6 @@ TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
 
 TEST(BorderNodeTest, numberOfKeys){
   auto node = reinterpret_cast<BorderNode *>(sample1());
-  EXPECT_EQ(node->numberOfKeys(), 2);
+  EXPECT_EQ(node->getPermutation().getNumKeys(), 2);
 }
 

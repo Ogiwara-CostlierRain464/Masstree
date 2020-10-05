@@ -479,27 +479,33 @@ public:
      *
      */
     auto current = key.getCurrentSlice();
+    auto p = getPermutation();
 
     if(!key.hasNext()){ // next key sliceがない場合
-      for(size_t i = 0; i < numberOfKeys(); ++i){
-        if(getKeySlice(i) == current.slice and getKeyLen(i) == current.size){
-          return std::tuple(VALUE, getLV(i), i);
+      for(size_t i = 0; i < p.getNumKeys(); ++i){
+        auto true_index = p(i);
+
+        if(getKeySlice(true_index) == current.slice
+          and getKeyLen(true_index) == current.size){
+          return std::tuple(VALUE, getLV(true_index), true_index);
         }
       }
     }else{ // next key sliceがある場合
-      for(size_t i = 0; i < numberOfKeys(); ++i){
-        if(getKeySlice(i) == current.slice){
-          if(getKeyLen(i) == BorderNode::key_len_has_suffix){
+      for(size_t i = 0; i < p.getNumKeys(); ++i){
+        auto true_index = p(i);
+
+        if(getKeySlice(true_index) == current.slice){
+          if(getKeyLen(true_index) == BorderNode::key_len_has_suffix){
             // suffixの中を見る
-            if(getKeySuffixes().isSame(i, key, key.cursor + 1)){
-              return std::tuple(VALUE, getLV(i), i);
+            if(getKeySuffixes().isSame(true_index, key, key.cursor + 1)){
+              return std::tuple(VALUE, getLV(true_index), true_index);
             }
           }
 
-          if(getKeyLen(i) == BorderNode::key_len_layer){
-            return std::tuple(LAYER, getLV(i), i);
+          if(getKeyLen(true_index) == BorderNode::key_len_layer){
+            return std::tuple(LAYER, getLV(true_index), true_index);
           }
-          if(getKeyLen(i) == BorderNode::key_len_unstable){
+          if(getKeyLen(true_index) == BorderNode::key_len_unstable){
             return std::tuple(UNSTABLE, LinkOrValue{}, 0);
           }
         }
@@ -509,42 +515,17 @@ public:
     return std::tuple(NOTFOUND, LinkOrValue{}, 0);
   }
 
-  /**
-   * 新たにkey sliceを挿入する余裕があるかどうか
-   */
-  [[nodiscard]]
-  bool isNotFull() const{
-    // key_lenが0 ⇒ その要素は空
-    return getKeyLen(ORDER - 2) == 0;
-  }
-
-  /**
-   * 有効なkeyの数
-   * @return
-   */
-  [[nodiscard]]
-  size_t numberOfKeys() const{
-    // key_lenが0 ⇒ その要素は空
-    size_t result = 0;
-    for(size_t i = 0; i < ORDER - 1; ++i){
-      if(getKeyLen(i) > 0){
-        ++result;
-      }else{
-        break;
-      }
-    }
-    return result;
-  }
-
   [[nodiscard]]
   KeySlice lowestKey() const{
-    return getKeySlice(0);
+    auto p = getPermutation();
+    return getKeySlice(p(0));
   }
 
   /**
    * このBorderNodeをdeleteする前に呼ばれる。
    */
   void connectPrevAndNext(){
+    // TODO: CAS等でatomicに行う必要性がある。
     auto next_ = getNext();
     auto prev_ = getPrev();
 
@@ -557,6 +538,19 @@ public:
 
     setNext(nullptr);
     setPrev(nullptr);
+  }
+
+  /**
+   * BorderNodeのUnused slotのうち、一番最初のIndexを返す。
+   * @return
+   */
+  std::optional<size_t> firstUnusedSlotIndex() const{
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      if(isKeyLenUnused(getKeyLen(i))){
+        return i;
+      }
+    }
+    return std::nullopt;
   }
 
   void printNode() const{
@@ -581,8 +575,6 @@ public:
       setKeyLen(i, 0);
     }
   }
-
-
 
   [[nodiscard]]
   inline KeySlice getKeySlice(size_t i) const{
@@ -636,9 +628,15 @@ public:
     return key_suffixes;
   }
 
-private:
+  inline Permutation getPermutation() const{
+    return permutation.load(std::memory_order_acquire);
+  }
 
-  std::atomic<uint8_t> n_removed = 0;
+  inline void setPermutation(const Permutation &p){
+    permutation.store(p, std::memory_order_release);
+  }
+
+private:
   /**
    * border nodeの各key_sliceの中の
    * sliceの長さ(byte数)を表す
@@ -666,6 +664,14 @@ private:
   std::atomic<BorderNode*> next{nullptr};
   std::atomic<BorderNode*> prev{nullptr};
   KeySuffix key_suffixes = {};
+
+  /**
+   * key_lenがunused slotであるかを表す。
+   * @return
+   */
+  static bool isKeyLenUnused(size_t key_len_){
+    return key_len_ == 0 or (10 <= key_len_ and key_len_ <= 18);
+  }
 };
 
 

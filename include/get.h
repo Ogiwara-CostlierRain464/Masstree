@@ -7,9 +7,9 @@
 namespace masstree{
 
 static Value *get(Node *root, Key &k){
-  retry:
+retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
+forward:
   if(v.deleted)
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
@@ -28,7 +28,8 @@ static Value *get(Node *root, Key &k){
     // advance k to next slice
     k.next();
     goto retry;
-  }else{ // t == UNSTABLE
+  }else{
+    assert(t == UNSTABLE);
     goto forward;
   }
 }
