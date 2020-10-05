@@ -7,6 +7,12 @@
 
 namespace masstree{
 
+/**
+ * Masstreeが空の状態の時、新しいMasstreeを作る。
+ * @param key
+ * @param value
+ * @return
+ */
 static BorderNode *start_new_tree(const Key &key, Value *value){
   auto root = new BorderNode{};
 #ifndef NDEBUG
@@ -37,15 +43,23 @@ static BorderNode *start_new_tree(const Key &key, Value *value){
   return root;
 }
 
+/**
+ * borderNodeにkeyを挿入した場合、invariantに違反するようになるか確認する。
+ * @param borderNode
+ * @param key
+ * @return 違反の原因となる、現在borderNodeに挿入されているkey sliceのインデックス、もしくはnull。
+ */
 static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
+  auto p = borderNode->getPermutation();
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
-    for (size_t i = 0; i < borderNode->getPermutation().getNumKeys(); ++i) {
-      if ((borderNode->getKeyLen(i) == BorderNode::key_len_has_suffix
-           || borderNode->getKeyLen(i) == BorderNode::key_len_layer)
-          && borderNode->getKeySlice(i) == cursor.slice
+    for (size_t i = 0; i < p.getNumKeys(); ++i) {
+      auto true_index = p(i);
+      if ((borderNode->getKeyLen(true_index) == BorderNode::key_len_has_suffix
+           || borderNode->getKeyLen(true_index) == BorderNode::key_len_layer)
+          && borderNode->getKeySlice(true_index) == cursor.slice
         ) {
-        return i;
+        return true_index;
       }
     }
   }
@@ -54,7 +68,13 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
 
 static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index);
 
-
+/**
+ * invariantを違反した場合の処理。§4.6.3を参考。
+ * @param border
+ * @param key
+ * @param value
+ * @param old_index
+ */
 static void handle_break_invariant(BorderNode *border, Key &key, Value *value, size_t old_index){
   if(border->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**

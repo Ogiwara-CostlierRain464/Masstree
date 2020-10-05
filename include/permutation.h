@@ -12,6 +12,9 @@ struct Permutation{
     setNumKeys(1);
     setKeyIndex(0,0);
   }
+  Permutation(const Permutation &other) = default;
+  Permutation &operator=(const Permutation &other) = default;
+
 
   inline uint8_t getNumKeys() const{
     return body & 0b1111;
@@ -63,6 +66,15 @@ struct Permutation{
   bool isNotFull() const{
     auto num = getNumKeys();
     return num != 15;
+  }
+
+  static Permutation fromSorted(size_t n_keys){
+    Permutation p{};
+    for(size_t i = 0; i < n_keys; ++i){
+      p.setKeyIndex(i,i);
+    }
+    p.setNumKeys(n_keys);
+    return p;
   }
 };
 

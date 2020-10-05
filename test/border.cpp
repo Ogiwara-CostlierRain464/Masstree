@@ -23,6 +23,9 @@ TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
   borderNode.setKeySlice(2, TWO);
   borderNode.setLV(2, LinkOrValue(&next_layer));
 
+  auto p = Permutation::fromSorted(3);
+  borderNode.setPermutation(p);
+
   Key k({ONE}, 2);
   auto tuple = borderNode.extractLinkOrValueWithIndexFor(k);
   EXPECT_EQ(std::get<0>(tuple), ExtractResult::VALUE);
