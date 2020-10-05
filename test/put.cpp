@@ -25,16 +25,14 @@ TEST(PutTest, start_new_tree){
 
 TEST(PutTest, check_break_invariant){
   BorderNode border{};
-  Key k({ONE, AB}, 2);
-  EXPECT_EQ(check_break_invariant(&border, k), std::nullopt);
+  Key k({TWO, AB}, 2);
   border.setKeyLen(1, BorderNode::key_len_has_suffix);
   border.setKeySlice(1, TWO);
-  EXPECT_EQ(check_break_invariant(&border, k), std::nullopt);
-  border.setKeyLen(0, BorderNode::key_len_has_suffix);
-  border.setKeySlice(0, ONE);
-  BigSuffix suffix({CD}, 3);
-  border.getKeySuffixes().set(0, &suffix);
-  EXPECT_EQ(check_break_invariant(&border, k), std::make_optional(0));
+  Permutation p{};
+  p.setKeyIndex(0, 1);
+  p.setNumKeys(1);
+  border.setPermutation(p);
+  EXPECT_EQ(check_break_invariant(&border, k), 1);
 }
 
 
