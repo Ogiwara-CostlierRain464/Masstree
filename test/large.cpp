@@ -42,7 +42,7 @@ for(size_t mm = 0; mm < COUNT; ++mm){
   for(size_t i = 0; i < COUNT; ++i){
     auto k = new Key;
     make_key(k);
-    root = put_at_layer0(root, *k, new int(9));
+    root = put_at_layer0(root, *k, new Value(9));
 
     k->reset();
     inserted_keys[i] = k;
@@ -51,7 +51,7 @@ for(size_t mm = 0; mm < COUNT; ++mm){
   for(int i = COUNT - 1; i >= 0; --i){
     auto k = inserted_keys[i];
     auto p = get(root, *k);
-    EXPECT_EQ(*reinterpret_cast<int *>(p), 9);
+    EXPECT_EQ(*p, 9);
     k->reset();
   }
 

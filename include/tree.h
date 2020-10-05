@@ -5,6 +5,7 @@
 #include "key.h"
 #include "permutation.h"
 #include "alloc.h"
+#include "value.h"
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
@@ -246,14 +247,14 @@ union LinkOrValue{
 
   explicit LinkOrValue(Node *next)
   : next_layer(next){}
-  explicit LinkOrValue(void *value_)
+  explicit LinkOrValue(Value *value_)
     : value(value_){}
 
   LinkOrValue(const LinkOrValue &other) = default;
 
 
   Node *next_layer = nullptr;
-  void *value;
+  Value *value;
 };
 
 

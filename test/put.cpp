@@ -11,7 +11,7 @@ class PutTest: public ::testing::Test{};
 
 TEST(PutTest, start_new_tree){
   Key k({ONE}, 8);
-  int i = 0;
+  Value i(0);
   auto root = start_new_tree(k, &i);
   EXPECT_EQ(root->getKeyLen(0), 8);
   EXPECT_EQ(root->getKeySlice(0), ONE);
@@ -40,7 +40,7 @@ TEST(PutTest, check_break_invariant){
 
 TEST(PutTest, handle_break_invariant){
   BorderNode borderNode{};
-  int i = 4;
+  Value i(4);
   borderNode.setKeyLen(0, 8);
   borderNode.setKeySlice(0, EIGHT);
   borderNode.setLV(0, LinkOrValue(&i));
@@ -49,7 +49,7 @@ TEST(PutTest, handle_break_invariant){
   auto suffix = new BigSuffix({ONE, TWO, THREE, AB}, 2);
   borderNode.getKeySuffixes().set(1, suffix);
   borderNode.setLV(1, LinkOrValue(&i));
-  int j = 5;
+  Value j(5);
   Key k({EIGHT, ONE, TWO, CD}, 2);
   handle_break_invariant(&borderNode, k, &j, 1);
 
@@ -72,7 +72,7 @@ TEST(PutTest, handle_break_invariant){
 TEST(PutTest, insert_into_border){
   BorderNode border{};
   BorderNode next{};
-  int i = 9;
+  Value i(9);
   border.setKeyLen(0, 2);
   border.setKeySlice(0, ONE);
   border.setLV(0, LinkOrValue(&i));
@@ -198,7 +198,7 @@ TEST(PutTest, split_keys_among2){
   BorderNode n{};
   BorderNode n1{};
 
-  int i = 9;
+  Value i(9);
   n.setKeyLen(0, 1);
   n.setKeySlice(0, 110);
   n.setLV(0, LinkOrValue(&i));

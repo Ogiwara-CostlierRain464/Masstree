@@ -11,13 +11,13 @@ TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
 
   borderNode.setKeyLen(0, 2);
   borderNode.setKeySlice(0, ONE);
-  int i = 0;
-  borderNode.setLV(0, LinkOrValue(&i));
+  Value val(1);
+  borderNode.setLV(0, LinkOrValue(&val));
   borderNode.setKeyLen(1, BorderNode::key_len_has_suffix);
   borderNode.setKeySlice(1, ONE);
   BigSuffix suffix({TWO}, 2);
   borderNode.getKeySuffixes().set(1, &suffix);
-  borderNode.setLV(1, LinkOrValue(&i));
+  borderNode.setLV(1, LinkOrValue(&val));
   BorderNode next_layer{};
   borderNode.setKeyLen(2, BorderNode::key_len_layer);
   borderNode.setKeySlice(2, TWO);
@@ -26,12 +26,12 @@ TEST(BorderNodeTest, extractLinkOrValueWithIndexFor){
   Key k({ONE}, 2);
   auto tuple = borderNode.extractLinkOrValueWithIndexFor(k);
   EXPECT_EQ(std::get<0>(tuple), ExtractResult::VALUE);
-  EXPECT_EQ(std::get<1>(tuple).value, &i);
+  EXPECT_EQ(std::get<1>(tuple).value, &val);
   EXPECT_EQ(std::get<2>(tuple), 0);
   Key k2({ONE, TWO}, 2);
   auto tuple2 = borderNode.extractLinkOrValueWithIndexFor(k2);
   EXPECT_EQ(std::get<0>(tuple2), ExtractResult::VALUE);
-  EXPECT_EQ(std::get<1>(tuple2).value, &i);
+  EXPECT_EQ(std::get<1>(tuple2).value, &val);
   EXPECT_EQ(std::get<2>(tuple2), 1);
   Key k3({TWO, THREE}, 8);
   auto tuple3 = borderNode.extractLinkOrValueWithIndexFor(k3);

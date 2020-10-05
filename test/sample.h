@@ -10,10 +10,10 @@ static Node *sample1(){
 
   root->setKeySlice(0, 0x01020304);
   root->setKeyLen(0, 4);
-  root->setLV(0, LinkOrValue(new int(1)));
+  root->setLV(0, LinkOrValue(new Value(1)));
   root->setKeySlice(1, 0x0102030405060708);
   root->setKeyLen(1, 8);
-  root->setLV(1, LinkOrValue(new int(2)));
+  root->setLV(1, LinkOrValue(new Value(2)));
   root->setIsRoot(true);
 
   return root;
@@ -26,7 +26,7 @@ static Node *sample2(){
   root->setKeySlice(0, 0x0001020304050607);
   Key key({0x0001'0203'0405'0607, 0x0A0B'0000'0000'0000}, 2);
   root->getKeySuffixes().set(0,key,1);
-  root->setLV(0, LinkOrValue(new int(1)));
+  root->setLV(0, LinkOrValue(new Value(1)));
   root->setIsRoot(true);
 
   return root;
@@ -43,10 +43,10 @@ static Node *sample3(){
 
   l2_root->setKeySlice(0, 0x0A0B'0000'0000'0000);
   l2_root->setKeyLen(0 ,2);
-  l2_root->setLV(0, LinkOrValue(new int(1)));
+  l2_root->setLV(0, LinkOrValue(new Value(1)));
   l2_root->setKeySlice(1, 0x0C0D'0000'0000'0000);
   l2_root->setKeyLen(1, 2);
-  l2_root->setLV(1, LinkOrValue(new int(2)));
+  l2_root->setLV(1, LinkOrValue(new Value(2)));
   l2_root->setIsRoot(true);
 
   return l1_root;
@@ -81,17 +81,17 @@ static Node *sample4(){
 
   _9->setKeyLen(0, 1);
   _9->setKeySlice(0, 0x09);
-  _9->setLV(0, LinkOrValue(new int(18)));
+  _9->setLV(0, LinkOrValue(new Value(18)));
   _9->setParent(root);
 
   _11->setKeyLen(0, 2);
   _11->setKeySlice(0, 0x0101);
-  _11->setLV(0, LinkOrValue(new int(22)));
+  _11->setLV(0, LinkOrValue(new Value(22)));
   _11->setParent(root);
 
   _160->setKeyLen(0, 3);
   _160->setKeySlice(0, 0x010600);
-  _160->setLV(0, LinkOrValue(new int(320)));
+  _160->setLV(0, LinkOrValue(new Value(320)));
   _160->setParent(root);
 
   return root;

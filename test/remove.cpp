@@ -392,7 +392,7 @@ TEST(RemoveTest, remove_all_layer){
   d->setKeyLen(0, 8);
   d->setKeySlice(0, FOUR);
   d->setIsRoot(true);
-  d->setLV(0, LinkOrValue(new int(9)));
+  d->setLV(0, LinkOrValue(new Value(9)));
 
   Key k({
     ONE,TWO,THREE,FOUR
@@ -425,12 +425,12 @@ TEST(RemoveTest, remove_all_layer2){
   c->setLV(0, LinkOrValue(d));
   c->setKeyLen(1, 8);
   c->setKeySlice(1, FIVE);
-  c->setLV(1, LinkOrValue(new int(8)));
+  c->setLV(1, LinkOrValue(new Value(8)));
 
   d->setKeyLen(0, 8);
   d->setKeySlice(0, FOUR);
   d->setIsRoot(true);
-  d->setLV(0, LinkOrValue(new int(9)));
+  d->setLV(0, LinkOrValue(new Value(9)));
 
   Key k({
     ONE,TWO,THREE,FOUR

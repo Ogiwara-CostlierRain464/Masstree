@@ -6,7 +6,7 @@
 
 namespace masstree{
 
-static void *get(Node *root, Key &k){
+static Value *get(Node *root, Key &k){
   retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
   forward:

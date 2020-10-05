@@ -7,7 +7,7 @@
 
 namespace masstree{
 
-static BorderNode *start_new_tree(const Key &key, void *value){
+static BorderNode *start_new_tree(const Key &key, Value *value){
   auto root = new BorderNode{};
 #ifndef NDEBUG
   Alloc::incBorder();
@@ -52,10 +52,10 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
   return std::nullopt;
 }
 
-static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_t upper_index);
+static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index);
 
 
-static void handle_break_invariant(BorderNode *border, Key &key, void *value, size_t old_index){
+static void handle_break_invariant(BorderNode *border, Key &key, Value *value, size_t old_index){
   if(border->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
@@ -119,7 +119,7 @@ static void handle_break_invariant(BorderNode *border, Key &key, void *value, si
  * @param key
  * @param value
  */
-static void insert_into_border(BorderNode *border, Key &key, void *value){
+static void insert_into_border(BorderNode *border, Key &key, Value *value){
   assert(border->isNotFull());
 
   size_t insertion_point = 0;
@@ -286,7 +286,7 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
  * @param k
  * @param value
  */
-static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, void *value){
+static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value *value){
   assert(!n->isNotFull());
 
   uint8_t temp_key_len[Node::ORDER] = {};
@@ -434,7 +434,7 @@ static KeySlice get_most_left_slice(Node *n){
  * @param value
  * @return new root if not nullptr.
  */
-static Node *split(Node *n, const Key &k, void *value){
+static Node *split(Node *n, const Key &k, Value *value){
   // precondition: n locked.
   assert(n->getLocked());
   Node *n1 = new BorderNode{};
@@ -503,7 +503,7 @@ ascend:
  * @param upper_index rootをnext_layerとして持つnode中のindex
  * @return
  */
-static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_t upper_index){
+static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index){
   if(root == nullptr){
     // Layer0が空の時のみここに来る
     assert(upper_layer == nullptr);
@@ -565,7 +565,7 @@ static Node *put(Node *root, Key &k, void *value, BorderNode *upper_layer, size_
   return root;
 }
 
-static Node *put_at_layer0(Node *root, Key &k, void *value){
+static Node *put_at_layer0(Node *root, Key &k, Value *value){
   return put(root, k, value, nullptr, 0);
 }
 

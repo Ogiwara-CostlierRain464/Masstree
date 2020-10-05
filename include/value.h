@@ -5,10 +5,20 @@ namespace masstree{
 
 class Value{
 public:
-  int integer;
 
-  explicit Value(int integer_)
-    : integer(integer_){}
+  Value(int body_)
+    : body(body_){}
+
+  bool operator==(const Value &rhs)const{
+    return body == rhs.body;
+  }
+
+  bool operator!=(const Value &rhs)const{
+    return !(*this == rhs);
+  }
+
+private:
+  int body;
 };
 
 }
