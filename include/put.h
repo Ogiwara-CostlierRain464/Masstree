@@ -143,46 +143,51 @@ static void insert_into_border(BorderNode *border, Key &key, Value *value){
   auto p = border->getPermutation();
   assert(p.isNotFull());
 
-  size_t insertion_point = 0;
+  size_t insertion_point_ps = 0;
   size_t num_keys = p.getNumKeys();
   auto cursor = key.getCurrentSlice();
-  while (insertion_point < num_keys
-         && border->getKeySlice(insertion_point) < cursor.slice){ // NOTE: ここで、size見ないの？
-    ++insertion_point;
+  while (insertion_point_ps < num_keys
+         && border->getKeySlice(p(insertion_point_ps)) < cursor.slice){ // NOTE: ここで、size見ないの？
+    ++insertion_point_ps;
   }
 
-  for(size_t i = num_keys; i > insertion_point; --i){ // 右シフト
-    border->setKeyLen(i, border->getKeyLen(i - 1));
-    border->setKeySlice(i, border->getKeySlice(i - 1));
-    border->getKeySuffixes().set(i, border->getKeySuffixes().get(i - 1));
-    border->setLV(i, border->getLV(i - 1));
-  }
+  // ここで、permutation spaceにおいてはどこに挿入すれば良いかがわかった
+
+  auto insert_point_ts = border->firstUnusedSlotIndex();
+  assert(insert_point_ts);
+  auto insertion_point_ts = insert_point_ts.value();
+  //上書きしても良いのか？…
+  // TODO: handle value delete.
+
 
   // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
-  border->setKeyLen(insertion_point, 0);
-  border->setKeySlice(insertion_point, 0);
-  border->getKeySuffixes().set(insertion_point, nullptr);
-  border->setLV(insertion_point, LinkOrValue{});
+  border->setKeyLen(insertion_point_ts, 0);
+  border->setKeySlice(insertion_point_ts, 0);
+  border->getKeySuffixes().set(insertion_point_ts, nullptr);
+  border->setLV(insertion_point_ts, LinkOrValue{});
 
   if(1 <= cursor.size and cursor.size <= 7){
-    border->setKeyLen(insertion_point, cursor.size);
-    border->setKeySlice(insertion_point, cursor.slice);
-    border->setLV(insertion_point, LinkOrValue(value));
+    border->setKeyLen(insertion_point_ts, cursor.size);
+    border->setKeySlice(insertion_point_ts, cursor.slice);
+    border->setLV(insertion_point_ts, LinkOrValue(value));
   }else{
     assert(cursor.size == 8);
     if(key.hasNext()){
       // invariantを満たさない場合の処理は完了したので、ここでは
       // チェック不要
-      border->setKeySlice(insertion_point, cursor.slice);
-      border->setKeyLen(insertion_point, BorderNode::key_len_has_suffix);
-      border->getKeySuffixes().set(insertion_point, key, key.cursor + 1);
-      border->setLV(insertion_point, LinkOrValue(value));
+      border->setKeySlice(insertion_point_ts, cursor.slice);
+      border->setKeyLen(insertion_point_ts, BorderNode::key_len_has_suffix);
+      border->getKeySuffixes().set(insertion_point_ts, key, key.cursor + 1);
+      border->setLV(insertion_point_ts, LinkOrValue(value));
     }else{
-      border->setKeyLen(insertion_point, 8);
-      border->setKeySlice(insertion_point, cursor.slice);
-      border->setLV(insertion_point, LinkOrValue(value));
+      border->setKeyLen(insertion_point_ts, 8);
+      border->setKeySlice(insertion_point_ts, cursor.slice);
+      border->setLV(insertion_point_ts, LinkOrValue(value));
     }
   }
+
+  p.insert(insertion_point_ps, insertion_point_ts);
+  border->setPermutation(p);
 }
 
 

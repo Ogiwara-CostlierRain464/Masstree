@@ -68,6 +68,14 @@ struct Permutation{
     return num != 15;
   }
 
+  void insert(size_t insertion_point_ps, size_t index_ts){
+    for(size_t i = getNumKeys(); i > insertion_point_ps; --i){ // 右シフト
+      setKeyIndex(i, getKeyIndex(i - 1));
+    }
+    setKeyIndex(insertion_point_ps, index_ts);
+    incNumKeys();
+  }
+
   static Permutation fromSorted(size_t n_keys){
     Permutation p{};
     for(size_t i = 0; i < n_keys; ++i){

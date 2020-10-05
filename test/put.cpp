@@ -84,17 +84,23 @@ TEST(PutTest, insert_into_border){
   border.setKeyLen(3, 3);
   border.setKeySlice(3, FIVE);
   border.setLV(3, LinkOrValue(&i));
+  border.setPermutation(Permutation::fromSorted(4));
 
   Key k({TWO, FIVE}, 8);
   insert_into_border(&border, k, &i);
 
   EXPECT_EQ(border.getKeyLen(1), BorderNode::key_len_has_suffix);
-  EXPECT_EQ(border.getKeySlice(1), TWO);
-  EXPECT_TRUE(border.getKeySuffixes().get(1)->getCurrentSlice().slice == FIVE);
-  EXPECT_EQ(border.getKeyLen(2), BorderNode::key_len_has_suffix);
-  EXPECT_EQ(border.getKeySlice(2), THREE);
-  EXPECT_TRUE(border.getKeySuffixes().get(2)->getCurrentSlice().slice == FOUR);
-  EXPECT_EQ(border.getKeyLen(3), BorderNode::key_len_layer);
+  EXPECT_EQ(border.getKeySlice(1), THREE);
+  EXPECT_EQ(border.getKeyLen(4), BorderNode::key_len_has_suffix);
+  EXPECT_EQ(border.getKeySlice(4), TWO);
+
+  BorderNode skip;
+  skipped_border(skip);
+  Key k2({2}, 4);
+  insert_into_border(&skip, k2, &i);
+
+  EXPECT_EQ(skip.getKeyLen(2), 4);
+  EXPECT_EQ(skip.getKeySlice(2), 2);
 }
 
 

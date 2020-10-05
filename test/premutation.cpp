@@ -62,5 +62,20 @@ TEST(PermutationTest, firstUnusedSlotIndex){
   EXPECT_EQ(n.firstUnusedSlotIndex(), 2);
 }
 
+TEST(PermutationTest, insert){
+  Permutation p{};
+  p.setKeyIndex(0, 3);
+  p.setKeyIndex(1, 4);
+  p.setKeyIndex(2, 5);
+  p.setKeyIndex(3, 0);
+  p.setKeyIndex(4, 1);
+  p.setNumKeys(5);
+
+  p.insert(3, 2);
+  EXPECT_EQ(p.getKeyIndex(3), 2);
+  EXPECT_EQ(p.getKeyIndex(4), 0);
+  EXPECT_EQ(p.getKeyIndex(5), 1);
+}
+
 
 
