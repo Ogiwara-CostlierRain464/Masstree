@@ -20,12 +20,16 @@ TEST(RemoveTest, not_empty_border){
   b->setKeySlice(1, TWO);
   b->setKeyLen(2, 1);
   b->setKeySlice(2, THREE);
+  b->setPermutation(Permutation::fromSorted(3));
 
   Key k({TWO}, 1);
   auto pair = remove(b, k, nullptr, 0);
+  auto p = b->getPermutation();
   EXPECT_TRUE(pair.second == b);
-  EXPECT_EQ(b->getKeySlice(0), ONE);
-  EXPECT_EQ(b->getKeySlice(1), THREE);
+  EXPECT_EQ(b->getKeySlice(p(0)), ONE);
+  EXPECT_EQ(b->getKeySlice(p(1)), THREE);
+  EXPECT_EQ(b->getKeySlice(1), TWO);
+  EXPECT_EQ(b->getKeyLen(1), 10);
 }
 
 //endregion
