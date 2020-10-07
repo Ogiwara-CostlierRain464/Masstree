@@ -179,6 +179,7 @@ TEST(PutTest, slice_table){
   n.setKeySlice(13, FOUR);
   n.setKeyLen(14, BorderNode::key_len_layer);
   n.setKeySlice(14, FOUR);
+  n.setPermutation(Permutation::fromSorted(15));
 
   std::vector<std::pair<KeySlice, size_t>> table;
   std::vector<KeySlice> found;
