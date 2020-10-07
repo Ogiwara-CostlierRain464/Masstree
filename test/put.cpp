@@ -47,6 +47,7 @@ TEST(PutTest, handle_break_invariant){
   auto suffix = new BigSuffix({ONE, TWO, THREE, AB}, 2);
   borderNode.getKeySuffixes().set(1, suffix);
   borderNode.setLV(1, LinkOrValue(&i));
+  borderNode.setPermutation(Permutation::fromSorted(2));
   Value j(5);
   Key k({EIGHT, ONE, TWO, CD}, 2);
   handle_break_invariant(&borderNode, k, &j, 1);
@@ -60,11 +61,11 @@ TEST(PutTest, handle_break_invariant){
   ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_layer);
   ASSERT_EQ(next->getKeySlice(0), TWO);
   next = reinterpret_cast<BorderNode *>(next->getLV(0).next_layer);
-  ASSERT_EQ(next->getKeyLen(0), 2);
-  ASSERT_EQ(next->getKeySlice(0), CD);
-  ASSERT_EQ(next->getKeyLen(1), BorderNode::key_len_has_suffix);
-  ASSERT_EQ(next->getKeySlice(1), THREE);
-  ASSERT_EQ(next->getKeySuffixes().get(1)->getCurrentSlice().slice, AB);
+  ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_has_suffix);
+  ASSERT_EQ(next->getKeySlice(0), THREE);
+  ASSERT_EQ(next->getKeySuffixes().get(0)->getCurrentSlice().slice, AB);
+  ASSERT_EQ(next->getKeyLen(1), 2);
+  ASSERT_EQ(next->getKeySlice(1), CD);
 }
 
 TEST(PutTest, insert_into_border){

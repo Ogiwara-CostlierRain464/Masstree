@@ -15,6 +15,7 @@ static Node *sample1(){
   root->setKeyLen(1, 8);
   root->setLV(1, LinkOrValue(new Value(2)));
   root->setIsRoot(true);
+  root->setPermutation(Permutation::fromSorted(2));
 
   return root;
 }
@@ -28,6 +29,7 @@ static Node *sample2(){
   root->getKeySuffixes().set(0,key,1);
   root->setLV(0, LinkOrValue(new Value(1)));
   root->setIsRoot(true);
+  root->setPermutation(Permutation::fromSorted(1));
 
   return root;
 }
@@ -40,6 +42,7 @@ static Node *sample3(){
   l1_root->setKeyLen(0, BorderNode::key_len_layer);
   l1_root->setLV(0, LinkOrValue(l2_root));
   l1_root->setIsRoot(true);
+  l1_root->setPermutation(Permutation::fromSorted(1));
 
   l2_root->setKeySlice(0, 0x0A0B'0000'0000'0000);
   l2_root->setKeyLen(0 ,2);
@@ -48,6 +51,7 @@ static Node *sample3(){
   l2_root->setKeyLen(1, 2);
   l2_root->setLV(1, LinkOrValue(new Value(2)));
   l2_root->setIsRoot(true);
+  l2_root->setPermutation(Permutation::fromSorted(2));
 
   return l1_root;
 }

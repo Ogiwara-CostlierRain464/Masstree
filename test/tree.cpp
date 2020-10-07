@@ -85,7 +85,7 @@ TEST(TreeTest, get2){
 
   auto p = get(root, key);
 
-  assert(p != nullptr);
+  ASSERT_TRUE(p != nullptr);
   EXPECT_EQ(*p, 2);
 }
 
@@ -95,7 +95,7 @@ TEST(TreeTest, get3){
 
   auto p = get(root, key);
 
-  assert(p != nullptr);
+  ASSERT_TRUE(p != nullptr);
   EXPECT_EQ(*p, 22);
 
   Key key2({0x010600}, 3);
