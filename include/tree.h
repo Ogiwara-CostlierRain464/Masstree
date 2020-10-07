@@ -609,6 +609,27 @@ public:
     setPermutation(Permutation::fromSorted(ORDER - 1));
   }
 
+  /**
+   * Mark that key has removed.
+   * Indicate by key length.
+   * @param i
+   */
+  void markKeyRemoved(uint8_t i){
+    auto len = getKeyLen(i);
+    assert(1 <= len and len <= key_len_has_suffix);
+    setKeyLen(i, len + 9);
+  }
+
+  /**
+   * Check whether corresponding index of key has removed.
+   * @param i
+   * @return
+   */
+  bool isKeyRemoved(uint8_t i){
+    auto len = getKeyLen(i);
+    return (10 <= len and len <= 18);
+  }
+
   [[nodiscard]]
   inline uint8_t getKeyLen(size_t i) const{
     return key_len[i].load(std::memory_order_acquire);

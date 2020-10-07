@@ -232,32 +232,9 @@ forward:
       return std::make_pair(LayerDeleted, nullptr);
     }
 
-    auto n_num_keys = p.getNumKeys();
-    auto suffix = n->getKeySuffixes().get(index);
-    if(suffix != nullptr){
-      assert(n->getKeyLen(index) == BorderNode::key_len_has_suffix);
-      n->getKeySuffixes().delete_ptr(index);
-    }
-
-    n->setKeyLen(index, 0);
-    n->setKeySlice(index, 0);
-
-    delete n->getLV(index).value;
-#ifndef NDEBUG
-    Alloc::decValue();
-#endif
-
-    for(size_t i = index; i + 1 <= n_num_keys - 1; ++i){ // i=0~13 左シフト
-      n->setKeyLen(i, n->getKeyLen(i+1));
-      n->setKeySlice(i, n->getKeySlice(i+1));
-      n->getKeySuffixes().set(i, n->getKeySuffixes().get(i+1));
-      n->setLV(i, n->getLV(i+1));
-    }
-    n->setKeyLen(n_num_keys-1, 0);
-    n->setKeySlice(n_num_keys-1, 0);
-    n->getKeySuffixes().set(n_num_keys-1, nullptr);
-    n->setLV(n_num_keys-1, LinkOrValue{});
-
+    n->markKeyRemoved(index);
+    p.removeIndex(index);
+    n->setPermutation(p);
 
     auto current_num_keys = p.getNumKeys();
 
