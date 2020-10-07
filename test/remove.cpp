@@ -480,3 +480,26 @@ TEST(RemoveTest, at_layer0_2){
   EXPECT_EQ(pair.first, NotChange);
 }
 //endregion
+
+TEST(RemoveTest, handle_delete_layer_in_remove){
+  auto upper = new BorderNode{};
+  auto n = new BorderNode{};
+  auto upper_index = 4;
+
+  upper->setKeyLen(upper_index, BorderNode::key_len_layer);
+  upper->setKeySlice(upper_index, ONE);
+  upper->setLV(upper_index, LinkOrValue(n));
+
+  Value v(1);
+  n->setKeyLen(1, BorderNode::key_len_has_suffix);
+  n->setKeySlice(1, TWO);
+  n->getKeySuffixes().set(1, new BigSuffix({THREE}, 8));
+  n->setLV(1, LinkOrValue(&v));
+  n->setPermutation(Permutation::from({1}));
+  n->setIsRoot(true);
+
+  handle_delete_layer_in_remove(n, upper, upper_index);
+
+  EXPECT_EQ(upper->getKeyLen(upper_index), BorderNode::key_len_has_suffix);
+  EXPECT_EQ(upper->getLV(upper_index).value, &v);
+}

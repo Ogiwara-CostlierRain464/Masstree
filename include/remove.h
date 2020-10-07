@@ -15,6 +15,13 @@ enum RootChange : uint8_t {
   LayerDeleted
 };
 
+/**
+ * removeの処理において、Layerのdeleteの処理を行う。
+ * §4.6.3での記述と同じように、下のlayerを消してから、上のlayerの削除の処理に移動する。
+ * @param n
+ * @param upper_layer
+ * @param upper_index
+ */
 static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
   auto p = n->getPermutation();
   assert(n->getParent() == nullptr);
@@ -23,15 +30,15 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   assert(upper_layer != nullptr);
 
   BigSuffix *upper_suffix;
-  if(n->getKeyLen(0) == BorderNode::key_len_has_suffix){
-    auto old_suffix = n->getKeySuffixes().get(0);
-    old_suffix->insertTop(n->getKeySlice(0));
+  if(n->getKeyLen(p(0)) == BorderNode::key_len_has_suffix){
+    auto old_suffix = n->getKeySuffixes().get(p(0));
+    old_suffix->insertTop(n->getKeySlice(p(0)));
     // suffixをそのまま再利用
     upper_suffix = old_suffix;
   }else{
     // Key TerminalとなるBorderに対する処理なので、BorderNode::key_len_layerにはなりえない。
-    assert(1 <= n->getKeyLen(0) and n->getKeyLen(0) <= 8);
-    upper_suffix = new BigSuffix({n->getKeySlice(0)}, n->getKeyLen(0));
+    assert(1 <= n->getKeyLen(p(0)) and n->getKeyLen(p(0)) <= 8);
+    upper_suffix = new BigSuffix({n->getKeySlice(p(0))}, n->getKeyLen(p(0)));
 #ifndef NDEBUG
     Alloc::incSuffix();
 #endif
@@ -40,7 +47,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   upper_layer->setKeyLen(upper_index, BorderNode::key_len_has_suffix);
   assert(upper_layer->getKeySuffixes().get(upper_index) == nullptr);
   upper_layer->getKeySuffixes().set(upper_index, upper_suffix);
-  upper_layer->setLV(upper_index, n->getLV(0));
+  upper_layer->setLV(upper_index, n->getLV(p(0)));
 
 #ifndef NDEBUG
   Alloc::decBorder();
@@ -168,9 +175,9 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
     return std::make_pair(NotChange, nullptr);
   }
 
-  retry:
+retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  forward:
+forward:
   if(v.deleted)
     goto retry;
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
@@ -218,6 +225,7 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
      */
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
+      // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
       handle_delete_layer_in_remove(n, upper_layer, upper_index);
       return std::make_pair(LayerDeleted, nullptr);
     }
