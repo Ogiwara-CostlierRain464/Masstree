@@ -330,7 +330,10 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
  */
 static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value *value){
   auto p = n->getPermutation();
-  assert(!p.isNotFull());
+  assert(p.isFull());
+
+  // 簡単のため、splitされるnをソートしておく。
+
 
   uint8_t temp_key_len[Node::ORDER] = {};
   uint64_t temp_key_slice[Node::ORDER] = {};

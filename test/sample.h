@@ -160,13 +160,23 @@ static void skipped_border(BorderNode &n){
   n.setKeySlice(5, 1);
 
   Permutation p;
-  p.setKeyIndex(0,3);
-  p.setKeyIndex(1,4);
-  p.setKeyIndex(2,5);
-  p.setKeyIndex(3,0);
-  p.setKeyIndex(4,1);
-  p.setNumKeys(5);
-  n.setPermutation(p);
+  n.setPermutation(Permutation::from({
+    3,4,5,0,1
+  }));
+}
+
+static void full_unsorted_border(BorderNode &n){
+  for(size_t i = 0; i <= 7; ++i){
+    n.setKeyLen(i, i+1);
+    n.setKeySlice(i, TWO);
+  }
+  for(size_t i = 8; i <= 14; ++i){
+    n.setKeyLen(i, i-7);
+    n.setKeySlice(i, ONE);
+  }
+  n.setPermutation(Permutation::from({
+    8,9,10,11,12,13,14,0,1,2,3,4,5,6,7
+  }));
 }
 
 #endif //MASSTREE_SAMPLE_H

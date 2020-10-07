@@ -8,10 +8,7 @@ namespace masstree{
 struct Permutation{
   uint64_t body = 0;
 
-  Permutation(){
-    setNumKeys(1);
-    setKeyIndex(0,0);
-  }
+  Permutation() = default;
   Permutation(const Permutation &other) = default;
   Permutation &operator=(const Permutation &other) = default;
 
@@ -68,6 +65,10 @@ struct Permutation{
     return num != 15;
   }
 
+  bool isFull() const{
+    return !isNotFull();
+  }
+
   void insert(size_t insertion_point_ps, size_t index_ts){
     for(size_t i = getNumKeys(); i > insertion_point_ps; --i){ // 右シフト
       setKeyIndex(i, getKeyIndex(i - 1));
@@ -76,12 +77,33 @@ struct Permutation{
     incNumKeys();
   }
 
+  /**
+   * Returns oen element Permutation
+   * Used at BorderNode init.
+   * @return
+   */
+  static Permutation sizeOne(){
+    Permutation p{};
+    p.setNumKeys(1);
+    p.setKeyIndex(0,0);
+    return p;
+  }
+
   static Permutation fromSorted(size_t n_keys){
     Permutation p{};
     for(size_t i = 0; i < n_keys; ++i){
       p.setKeyIndex(i,i);
     }
     p.setNumKeys(n_keys);
+    return p;
+  }
+
+  static Permutation from(const std::vector<size_t> &vec){
+    Permutation p{};
+    for(size_t i = 0; i < vec.size(); ++i){
+      p.setKeyIndex(i, vec[i]);
+    }
+    p.setNumKeys(vec.size());
     return p;
   }
 };

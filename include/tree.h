@@ -134,6 +134,12 @@ public:
     return v.locked;
   }
 
+  [[nodiscard]]
+  inline bool getSplitting() const{
+    auto v = getVersion();
+    return v.splitting;
+  }
+
   inline void setSplitting(bool splitting){
     auto v = getVersion();
     v.splitting = splitting;
@@ -561,6 +567,39 @@ public:
     printf("\n");
   }
 
+  /**
+   * Sort unordered BorderNode, including Permutation.
+   * This should be called only at BorderNode splitting.
+   */
+  void sort(){
+    auto p = getPermutation();
+    assert(p.isFull());
+    assert(getLocked());
+    assert(getSplitting());
+
+    uint8_t temp_key_len[Node::ORDER - 1] = {};
+    uint64_t temp_key_slice[Node::ORDER - 1] = {};
+    LinkOrValue temp_lv[Node::ORDER - 1] = {};
+    BigSuffix* temp_suffix[Node::ORDER - 1] = {};
+
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      auto index_ts = p(i);
+      temp_key_len[i] = getKeyLen(index_ts);
+      temp_key_slice[i] = getKeySlice(index_ts);
+      temp_lv[i] = getLV(index_ts);
+      temp_suffix[i] = getKeySuffixes().get(index_ts);
+    }
+
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      setKeyLen(i, temp_key_len[i]);
+      setKeySlice(i, temp_key_slice[i]);
+      setLV(i, temp_lv[i]);
+      getKeySuffixes().set(i, temp_suffix[i]);
+    }
+
+    setPermutation(Permutation::fromSorted(ORDER - 1));
+  }
+
   [[nodiscard]]
   inline uint8_t getKeyLen(size_t i) const{
     return key_len[i].load(std::memory_order_acquire);
@@ -658,7 +697,7 @@ private:
    * LinkOrValueにはnext_layerがある
    */
   std::array<std::atomic<uint8_t>, ORDER - 1> key_len = {};
-  std::atomic<Permutation> permutation = {};
+  std::atomic<Permutation> permutation = Permutation::sizeOne();
   std::array<std::atomic<uint64_t>, ORDER - 1> key_slice = {};
   std::array<std::atomic<LinkOrValue>, ORDER - 1> lv = {};
   std::atomic<BorderNode*> next{nullptr};

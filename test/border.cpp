@@ -51,3 +51,15 @@ TEST(BorderNodeTest, numberOfKeys){
   EXPECT_EQ(node->getPermutation().getNumKeys(), 2);
 }
 
+TEST(BorderNodeTest, sort){
+  BorderNode n;
+  full_unsorted_border(n);
+  n.lock();
+  n.setSplitting(true);
+  n.sort();
+  n.unlock();
+  EXPECT_EQ(n.getKeyLen(0),1);
+  EXPECT_EQ(n.getKeySlice(0),ONE);
+  EXPECT_EQ(n.getKeyLen(7),1);
+  EXPECT_EQ(n.getKeySlice(7),TWO);
+}
