@@ -212,6 +212,8 @@ static size_t cut(size_t len){
  * @param p1
  * @param slice
  * @param n1
+ * @param n_index
+ * @param[out] k_prime parentにinsertされるkey sliceを返す。通常、これはtemp_key_sliceのうちp1の最初のkey sliceの前のものである。
  */
 static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index, std::optional<KeySlice> &k_prime){
   assert(!p->isNotFull());
@@ -233,7 +235,8 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
   temp_key_slice[n_index] = slice;
 
   // clean
-  // 実は、InteriorNodeの場合はn_keysを0にするだけで十分
+  // InteriorNodeの場合はn_keysを0にするだけで十分だが
+  // 予期せぬバグを防ぐためにクリーンにしておく。
   p->resetKeySlices();
   p->resetChildren();
   p->setNumKeys(0);
@@ -258,7 +261,12 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
   }
 }
 
-
+/**
+ * BorderNode中のkey sliceのマップを作る。
+ * @param n
+ * @param[out] table
+ * @param[out] found
+ */
 static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
   auto p = n->getPermutation();
   assert(!p.isNotFull());
@@ -271,6 +279,13 @@ static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, si
   // already sorted.
 }
 
+/**
+ * BorderNodeのsplitにおいて、splitする位置を決める。
+ * @param new_slice
+ * @param table
+ * @param found
+ * @return
+ */
 static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySlice, size_t>> &table, const std::vector<KeySlice> &found){
   auto min_slice = *std::min_element(found.begin(), found.end());
   auto max_slice = *std::max_element(found.begin(), found.end());
