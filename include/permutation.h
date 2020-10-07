@@ -56,6 +56,20 @@ struct Permutation{
     assert(0 <= check and check <= 14);
   }
 
+  inline void removeIndex(uint8_t true_index){
+    uint8_t removed_ps_index;
+    for(uint8_t i = 0; i < getNumKeys(); ++i){
+      if(getKeyIndex(i) == true_index){
+        removed_ps_index = i;
+        break;
+      }
+    }
+    for(uint8_t target = removed_ps_index; target + 1 <= getNumKeys() - 1; ++target){
+      setKeyIndex(target, getKeyIndex(target+1));
+    }
+    decNumKeys();
+  }
+
   /**
    * getKeyIndexのsyntax sugar.
    * @param i
