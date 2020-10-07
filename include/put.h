@@ -467,16 +467,6 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
   p->incNumKeys();
 }
 
-static KeySlice get_most_left_slice(Node *n){
-  if(n->getIsBorder()){
-    auto border = reinterpret_cast<BorderNode*>(n);
-    return border->getKeySlice(0);
-  }else{
-    auto interior = reinterpret_cast<InteriorNode*>(n);
-    return interior->getKeySlice(0);
-  }
-}
-
 /**
  *
  * @param n
@@ -503,7 +493,7 @@ static Node *split(Node *n, const Key &k, Value *value){
 ascend:
   InteriorNode *p = n->lockedParent();
   if(p == nullptr){
-    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
+    auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     p = create_root_with_children(n, up, n1);
     n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -512,7 +502,7 @@ ascend:
   }else if(p->isNotFull()){
     p->setInserting(true);
     size_t n_index = p->findChildIndex(n);
-    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
+    auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     insert_into_parent(p, n1, up ,n_index);
     n->unlock();
     std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -533,7 +523,7 @@ ascend:
     Alloc::incInterior();
 #endif
     p1->setVersion(p->getVersion());
-    auto up = pull_up ? pull_up.value() : get_most_left_slice(n1);
+    auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),
       reinterpret_cast<InteriorNode *>(p1), up, n1, n_index, pull_up);
