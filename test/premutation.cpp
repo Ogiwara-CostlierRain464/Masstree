@@ -63,19 +63,21 @@ TEST(PermutationTest, firstUnusedSlotIndex){
 }
 
 TEST(PermutationTest, insert){
-  Permutation p{};
-  p.setKeyIndex(0, 3);
-  p.setKeyIndex(1, 4);
-  p.setKeyIndex(2, 5);
-  p.setKeyIndex(3, 0);
-  p.setKeyIndex(4, 1);
-  p.setNumKeys(5);
+  auto p = Permutation::from({3,4,5,0,1});
 
   p.insert(3, 2);
-  EXPECT_EQ(p.getKeyIndex(3), 2);
-  EXPECT_EQ(p.getKeyIndex(4), 0);
-  EXPECT_EQ(p.getKeyIndex(5), 1);
+  EXPECT_EQ(p(3), 2);
+  EXPECT_EQ(p(4), 0);
+  EXPECT_EQ(p(5), 1);
 }
 
+TEST(PermutationTest, removeIndex){
+  auto p = Permutation::from({3,4,5,0,1});
+  p.removeIndex(3);
+  p.removeIndex(5);
+  EXPECT_EQ(p(0), 4);
+  EXPECT_EQ(p(1), 0);
+  EXPECT_EQ(p.getNumKeys(), 3);
+}
 
 
