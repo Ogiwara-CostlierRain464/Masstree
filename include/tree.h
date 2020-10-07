@@ -410,6 +410,15 @@ public:
     set(i, nullptr);
   }
 
+  void deleteAll(){
+    for(size_t i = 0; i < Node::ORDER - 1; ++i){
+      auto p = get(i);
+      if(p != nullptr){
+        delete p;
+      }
+    }
+  }
+
   /**
    * from以降で、keyがsuffixと一致するか
    * @param i
@@ -673,6 +682,15 @@ public:
 
   inline void setPermutation(const Permutation &p){
     permutation.store(p, std::memory_order_release);
+  }
+
+  ~BorderNode(){
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      assert(getKeyLen(i) != key_len_layer);
+      delete getLV(i).value;
+    }
+
+    getKeySuffixes().deleteAll();
   }
 
 private:

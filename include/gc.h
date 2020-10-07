@@ -26,7 +26,7 @@ public:
 
   void run(){
     for(auto &b: borders){
-      // TODO: Destructorでvalueとsuffixも解放する
+      // destructorでvalueとsuffixも解放される
       delete b;
     }
     borders.clear();
