@@ -269,8 +269,25 @@ TEST(PutTest, split_keys_among2){
   n.setKeySlice(14, 114);
   n.setLV(14, LinkOrValue(&i));
 
+  n.lock();
+  n.setSplitting(true);
+  n.setPermutation(Permutation::fromSorted(15));
+
   Key k({112, AB}, 2);
   split_keys_among(&n, &n1, k, &i);
   EXPECT_EQ(n.getKeyLen(8), 9);
   EXPECT_EQ(n1.getKeySuffixes().get(1), nullptr);
+
+  BorderNode unsorted;
+  full_unsorted_border(unsorted);
+  unsorted.lock();
+  unsorted.setSplitting(true);
+  BorderNode n2{};
+  Key k2({ONE}, 8);
+  split_keys_among(&unsorted, &n2, k2, &i);
+  EXPECT_EQ(unsorted.getKeyLen(7), 7);
+  EXPECT_EQ(unsorted.getKeySlice(7), ONE);
+  EXPECT_EQ(n2.getKeyLen(0), 1);
+  EXPECT_EQ(n2.getKeySlice(0), TWO);
+
 }

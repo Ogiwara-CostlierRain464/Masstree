@@ -269,7 +269,7 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
  */
 static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
   auto p = n->getPermutation();
-  assert(!p.isNotFull());
+  assert(p.isFull());
   for(size_t i = 0; i < Node::ORDER - 1; ++i){
     if(!std::count(found.begin(), found.end(), n->getKeySlice(i))){ // NOT FOUND
       table.emplace_back(n->getKeySlice(i), i);
@@ -331,9 +331,10 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
 static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value *value){
   auto p = n->getPermutation();
   assert(p.isFull());
+  assert(n->getSplitting());
 
   // 簡単のため、splitされるnをソートしておく。
-
+  n->sort();
 
   uint8_t temp_key_len[Node::ORDER] = {};
   uint64_t temp_key_slice[Node::ORDER] = {};
@@ -400,6 +401,7 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
     n->setLV(i, temp_lv[i]);
     n->getKeySuffixes().set(i, temp_suffix[i]);
   }
+  n->setPermutation(Permutation::fromSorted(split));
 
   for(size_t i = split, j = 0; i < Node::ORDER; ++i, ++j){
     n1->setKeyLen(j, temp_key_len[i]);
@@ -407,7 +409,9 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
     n1->setLV(j, temp_lv[i]);
     n1->getKeySuffixes().set(j, temp_suffix[i]);
   }
+  n1->setPermutation(Permutation::fromSorted(Node::ORDER - split));
 
+  // TODO: 繋ぎ直しを並行性制御で対応できるように　
   n1->setNext(n->getNext());
   n1->setPrev(n);
   n->setNext(n1);
