@@ -10,15 +10,15 @@ using namespace masstree;
 
 class LargeTest: public ::testing::Test{};
 
-KeySlice arr[] = {ONE, TWO, THREE, FOUR, FIVE};
-
-void make_key(Key *k){
-  size_t slices_len = (rand() % 100)+10;
+Key *make_key(){
+  std::vector<KeySlice> vec{};
+  size_t slices_len = 1;
   for(size_t i = 1; i <= slices_len; ++i){
-    auto slice = arr[rand() % 5];
-    k->slices.push_back(slice);
+    auto slice = rand() % 10;
+    vec.push_back(slice);
   }
-  k->lastSliceSize = 8;
+  auto lastSize = (rand() % 8) + 1;
+  return new Key(vec, lastSize);
 }
 
 static BorderNode *to_b(Node *n){
@@ -29,8 +29,37 @@ static InteriorNode *to_i(Node *n){
   return reinterpret_cast<InteriorNode *>(n);
 }
 
+TEST(LargeTest, put_get){
+  auto seed = 1602044746;
+  srand(seed);
 
-TEST(LargeTest, DISABLED_layer0){
+  constexpr size_t COUNT = 10000;
+
+  Node *root = nullptr;
+  std::array<Key *, COUNT> inserted_keys{};
+
+  for(size_t i = 0; i < COUNT; ++i){
+
+    if(i == 9){
+      EXPECT_TRUE(true);
+    }
+
+    auto k = make_key();
+    root = put_at_layer0(root, *k, new Value(k->lastSliceSize));
+
+    k->reset();
+    inserted_keys[i] = k;
+  }
+
+  for(int i = COUNT - 1; i >= 0; --i){
+    auto k = inserted_keys[i];
+    auto p = get(root, *k);
+    EXPECT_EQ(*p, k->lastSliceSize);
+    k->reset();
+  }
+}
+
+TEST(LargeTest, DISABLED_put_get_remove){
   auto seed = time(0);
   srand(seed);
 
@@ -40,8 +69,7 @@ for(size_t mm = 0; mm < COUNT; ++mm){
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
   for(size_t i = 0; i < COUNT; ++i){
-    auto k = new Key;
-    make_key(k);
+    auto k = make_key();
     root = put_at_layer0(root, *k, new Value(9));
 
     k->reset();

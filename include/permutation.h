@@ -14,7 +14,7 @@ struct Permutation{
 
 
   inline uint8_t getNumKeys() const{
-    return body & 0b1111;
+    return body & 0b1111LLU;
   }
 
   inline void setNumKeys(size_t num){
@@ -38,17 +38,22 @@ struct Permutation{
     assert(0 <= i and i < getNumKeys());
 
     auto rshift = body >> (15-i)*4;
-    return rshift & 0b1111;
+    auto result = rshift & 0b1111LL;
+    assert(0 <= result and result <= 14);
+    return result;
   }
 
   inline void setKeyIndex(size_t i, uint8_t true_index){
     assert(0 <= i and i <= 14);
     assert(0 <= true_index and true_index <= 14);
 
-    auto left = (body >> (16-i)*4) << (16-i)*4;
-    auto right = body & ((1LL << ((15-i)*4))-1);
-    auto middle = true_index * (1LL << (15-i)*4);
+    auto left = i == 0 ? 0 : (body >> (16-i)*4) << (16-i)*4;
+    auto right = body & ((1LLU << ((15-i)*4))-1);
+    auto middle = true_index * (1LLU << (15-i)*4);
     body =  left | middle | right;
+
+    auto check = (body >> (15-i)*4) & 0b1111LLU;
+    assert(0 <= check and check <= 14);
   }
 
   /**

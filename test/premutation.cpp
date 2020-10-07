@@ -15,7 +15,7 @@ TEST(PermutationTest, getNumKeys){
 
 TEST(PermutationTest, setNumKeys){
   Permutation p{};
-  p.body = 0b0000'0001'0010'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0011;
+  p.body = 0b1011'0001'0010'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0011;
   p.setNumKeys(4);
   EXPECT_EQ(p.getNumKeys(), 4);
   EXPECT_EQ(p.getKeyIndex(1), 1);
