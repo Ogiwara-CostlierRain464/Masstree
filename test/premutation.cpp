@@ -55,13 +55,6 @@ TEST(PermutationTest, extractLinkOrValueWithIndexFor){
   EXPECT_EQ(std::get<2>(tuple), 4);
 }
 
-TEST(PermutationTest, firstUnusedSlotIndex){
-
-  BorderNode n;
-  skipped_border(n);
-  EXPECT_EQ(n.firstUnusedSlotIndex(), 2);
-}
-
 TEST(PermutationTest, insert){
   auto p = Permutation::from({3,4,5,0,1});
 

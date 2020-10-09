@@ -393,11 +393,11 @@ public:
    * @param i
    * @param ptr
    */
-  void set(size_t i, BigSuffix* const &ptr){
+  inline void set(size_t i, BigSuffix* const &ptr){
     suffixes[i].store(ptr, std::memory_order_release);
   }
 
-  BigSuffix* get(size_t i){
+  inline BigSuffix* get(size_t i) const{
     return suffixes[i].load(std::memory_order_acquire);
   }
 
@@ -426,7 +426,7 @@ public:
    * @param from
    * @return
    */
-  bool isSame(size_t i, const Key &key, size_t from){
+  bool isSame(size_t i, const Key &key, size_t from) const{
     return get(i)->isSame(key, from);
   }
 
@@ -556,16 +556,40 @@ public:
   }
 
   /**
-   * BorderNodeのUnused slotのうち、一番最初のIndexを返す。
+   * keyをinsertすべきpointを返す。
+   * もしremoved slotがreuseされることになるならば、二番目の要素がtrueになる。
+   * その時にはinsert側はv_insertを更新する必要がある
+   * @param key
    * @return
    */
-  std::optional<size_t> firstUnusedSlotIndex() const{
-    for(size_t i = 0; i < ORDER - 1; ++i){
-      if(isKeyLenUnused(getKeyLen(i))){
-        return i;
+  std::pair<size_t, bool> insertPoint(const Key &key) const{
+    // first, find
+    auto current = key.getCurrentSlice();
+    if(!key.hasNext()){
+      for(size_t i = 0; i < ORDER - 1; ++i){
+        if(getKeySlice(i) == current.slice
+        and getKeyLen(i) == current.size + 9){
+          return std::make_pair(i, true);
+        }
+      }
+    }else{
+      for(size_t i = 0; i < ORDER - 1; ++i){
+        if(getKeySlice(i) == current.slice
+        and getKeyLen(i) == 18){
+          if(getKeySuffixes().isSame(i, key, key.cursor+1)){
+            return std::make_pair(i, true);
+          }
+        }
       }
     }
-    return std::nullopt;
+
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      if(isKeyLenUnused(getKeyLen(i))){
+        return std::make_pair(i, false);
+      }
+    }
+
+    assert(false);
   }
 
   void printNode() const{
@@ -694,6 +718,10 @@ public:
   }
 
   inline KeySuffix& getKeySuffixes(){
+    return key_suffixes;
+  }
+
+  inline const KeySuffix& getKeySuffixes() const{
     return key_suffixes;
   }
 

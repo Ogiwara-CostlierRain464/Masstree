@@ -139,7 +139,7 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
  * @param key
  * @param value
  */
-static void insert_into_border(BorderNode *border, Key &key, Value *value){
+static void insert_into_border(BorderNode *border, const Key &key, Value *value){
   auto p = border->getPermutation();
   assert(p.isNotFull());
 
@@ -153,13 +153,26 @@ static void insert_into_border(BorderNode *border, Key &key, Value *value){
 
   // ここで、permutation spaceにおいてはどこに挿入すれば良いかがわかった
 
-  auto insert_point_ts = border->firstUnusedSlotIndex();
-  assert(insert_point_ts);
-  auto insertion_point_ts = insert_point_ts.value();
+  // 同じKeyに対して上書きをした場合は
+  // また、同じkey sliceを持つ順番に関わらず、同じkey sliceで同じkey lenを持つ場合にはちゃんと上書き判定ができるようにする必要がある
+  // その上で、first unused slot index関数の使用は不適切であろう
+  // 違うkeyを上書きする以上は、insertingにする必要がなさそうだ
+  // つまり、別に必ずしも積極的に同じkeyに対してinsertする必要はない
+  // insert pointの実装では積極的に上書きをするようにしているが、そうではなく、
+  // 積極的に避ける事ができればinsertingのマークの必要性が減るのか？
+  // いや、しかしながら、それでは同じkeyが存在することになってしまう。
+  // やはり、かぶっているkeyがあったらそれを上書きしにいく、という方針でないとまずいだろう。
+  auto pair = border->insertPoint(key);
+  auto insertion_point_ts = pair.first;
+  auto reuse = pair.second;
+
+  if(reuse){
+    // reuseする場合には、わざわざ上書きする必要はないかもしれない。
+    border->setInserting(true);
+  }
+
   //上書きしても良いのか？…
   // TODO: handle value delete.
-
-
   // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
   border->setKeyLen(insertion_point_ts, 0);
   border->setKeySlice(insertion_point_ts, 0);

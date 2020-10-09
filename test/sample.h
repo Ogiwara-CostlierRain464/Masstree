@@ -163,7 +163,31 @@ static void skipped_border(BorderNode &n){
   n.setKeyLen(5, 8);
   n.setKeySlice(5, 1);
 
-  Permutation p;
+  n.setPermutation(Permutation::from({
+    3,4,5,0,1
+  }));
+}
+
+static void skipped_border2(BorderNode &n){
+  n.setKeyLen(0, 5);
+  n.setKeySlice(0, 2);
+  n.setKeyLen(1, 7);
+  n.setKeySlice(1, 2);
+  n.setKeyLen(2, 10);
+  n.setKeySlice(2, 3);
+
+  n.setKeyLen(3, 1);
+  n.setKeySlice(3, 1);
+  n.setKeyLen(4, 2);
+  n.setKeySlice(4, 1);
+  n.setKeyLen(5, 8);
+  n.setKeySlice(5, 1);
+  n.setKeyLen(5, 8);
+  n.setKeySlice(5, 1);
+  n.setKeyLen(6, 18);
+  n.setKeySlice(6, 1);
+  n.getKeySuffixes().set(6, new BigSuffix({2,3}, 4));
+
   n.setPermutation(Permutation::from({
     3,4,5,0,1
   }));

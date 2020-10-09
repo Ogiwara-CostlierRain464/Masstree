@@ -63,3 +63,21 @@ TEST(BorderNodeTest, sort){
   EXPECT_EQ(n.getKeyLen(7),1);
   EXPECT_EQ(n.getKeySlice(7),TWO);
 }
+
+TEST(BorderNodeTest, insertPoint){
+  BorderNode n;
+  skipped_border2(n);
+
+  Key k({3}, 1);
+  auto pair = n.insertPoint(k);
+  EXPECT_EQ(pair.first, 2);
+  EXPECT_EQ(pair.second, true);
+  Key k1({1,2,3}, 4);
+  pair = n.insertPoint(k1);
+  EXPECT_EQ(pair.first, 6);
+  EXPECT_EQ(pair.second, true);
+  Key k2({1}, 3);
+  pair = n.insertPoint(k2);
+  EXPECT_EQ(pair.first, 2);
+  EXPECT_EQ(pair.second, false);
+}
