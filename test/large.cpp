@@ -13,7 +13,7 @@ class LargeTest: public ::testing::Test{};
 
 Key *make_key(){
   std::vector<KeySlice> vec{};
-  size_t slices_len = (rand() % 10) + 1;
+  size_t slices_len = (rand() % 2) + 1;
   for(size_t i = 1; i <= slices_len; ++i){
     auto slice = rand() % 3;
     vec.push_back(slice);
@@ -60,7 +60,7 @@ TEST(LargeTest, DISABLED_put_get){
   }
 }
 
-TEST(LargeTest, put_get_remove){
+TEST(LargeTest, DISABLED_put_get_remove){
   auto seed = time(0);
   srand(seed);
 
@@ -97,3 +97,33 @@ TEST(LargeTest, put_get_remove){
   Alloc::reset();
 }
 
+TEST(LargeTest, random_op){
+  auto seed = time(0);
+  srand(seed);
+
+  constexpr size_t COUNT = 10000;
+  GC gc{};
+
+  Node *root = nullptr;
+  for(size_t i = 0; i < COUNT; ++i){
+    auto k = make_key();
+    auto op = rand() % 2;
+    switch (op) {
+      case 0: {
+        get(root, *k);
+      }
+      case 1: {
+        root = put_at_layer0(root, *k, new Value(k->lastSliceSize));
+      }
+      default: {
+        root = remove_at_layer0(root, *k, gc);
+      }
+    }
+    delete k;
+  }
+
+  gc.run();
+
+  Alloc::print();
+  Alloc::reset();
+}

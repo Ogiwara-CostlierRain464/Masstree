@@ -7,6 +7,11 @@
 namespace masstree{
 
 static Value *get(Node *root, Key &k){
+  if(root == nullptr){
+    // Layer0が空の時にのみ、ここにくる
+    assert(k.cursor == 0);
+    return nullptr;
+  }
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
 forward:
