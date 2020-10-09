@@ -88,6 +88,7 @@ TEST(PutTest, insert_into_border){
   border->setPermutation(Permutation::fromSorted(4));
 
   Key k({TWO, FIVE}, 8);
+  border->lock();
   insert_into_border(border, k, &i);
 
   EXPECT_EQ(border->getKeyLen(1), BorderNode::key_len_has_suffix);
@@ -98,6 +99,7 @@ TEST(PutTest, insert_into_border){
   auto skip = new BorderNode;
   skipped_border(skip);
   Key k2({2}, 4);
+  skip->lock();
   insert_into_border(skip, k2, &i);
 
   EXPECT_EQ(skip->getKeyLen(2), 4);

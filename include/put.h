@@ -140,6 +140,7 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
  * @param value
  */
 static void insert_into_border(BorderNode *border, const Key &key, Value *value){
+  assert(border->getLocked());
   auto p = border->getPermutation();
   assert(p.isNotFull());
 
@@ -591,7 +592,9 @@ forward:
       handle_break_invariant(n, k, value, check.value());
     }else{
       if(p.isNotFull()){
+        n->lock();
         insert_into_border(n, k, value);
+        n->unlock();
       }else{
         n->lock();
         auto may_new_root = split(n, k, value);

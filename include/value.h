@@ -17,6 +17,10 @@ public:
     return !(*this == rhs);
   }
 
+  inline int getBody() const{
+    return body;
+  }
+
 private:
   int body;
 };
