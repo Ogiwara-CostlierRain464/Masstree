@@ -14,7 +14,7 @@ Key *make_key(){
   std::vector<KeySlice> vec{};
   size_t slices_len = (rand() % 2) + 1;
   for(size_t i = 1; i <= slices_len; ++i){
-    auto slice = rand() % 10;
+    auto slice = rand() % 3;
     vec.push_back(slice);
   }
   auto lastSize = (rand() % 8) + 1;
@@ -29,7 +29,7 @@ static InteriorNode *to_i(Node *n){
   return reinterpret_cast<InteriorNode *>(n);
 }
 
-TEST(LargeTest, DISABLED_put_get){
+TEST(LargeTest, put_get){
   auto seed = time(0);
   srand(seed);
 

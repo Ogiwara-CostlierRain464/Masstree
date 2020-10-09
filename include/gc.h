@@ -24,6 +24,15 @@ public:
     interiors.push_back(i);
   }
 
+  bool contain(BorderNode const *n) const{
+    return std::find(borders.begin(), borders.end(), n) != borders.end();
+  }
+
+  bool contain(InteriorNode const *n) const{
+    return std::find(interiors.begin(), interiors.end(), n) != interiors.end();
+  }
+
+
   void run(){
     for(auto &b: borders){
       // destructorでvalueとsuffixも解放される

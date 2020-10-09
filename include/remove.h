@@ -50,10 +50,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   upper_layer->getKeySuffixes().set(upper_index, upper_suffix);
   upper_layer->setLV(upper_index, n->getLV(p(0)));
 
-#ifndef NDEBUG
-  Alloc::decBorder();
-#endif
-  delete n;
+  gc.add(n);
 }
 
 
@@ -71,16 +68,11 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
   // すでに要素は削除済み
   assert(per.getNumKeys() == 0);
 
-  // ここもそうだけど、まずGCを渡して、そしてinsertの時にvinsertあげるのを追加する。
-
   if(n->getIsRoot()){
     // Layer 0以外ではここには到達しない
     assert(n->getParent() == nullptr);
     assert(upper_layer == nullptr);
-    delete n;
-#ifndef NDEBUG
-    Alloc::decBorder();
-#endif
+    gc.add(n);
     return std::make_pair(LayerDeleted, nullptr);
   }
 
@@ -106,10 +98,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     p->decNumKeys();
 
     n->connectPrevAndNext();
-    delete n;
-#ifndef NDEBUG
-    Alloc::decBorder();
-#endif
+    gc.add(n);
     // rootの変更無し
   }else{
     assert(p->getNumKeys() == 1);

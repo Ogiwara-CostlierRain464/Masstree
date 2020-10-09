@@ -521,4 +521,5 @@ TEST(RemoveTest, handle_delete_layer_in_remove){
 
   EXPECT_EQ(upper->getKeyLen(upper_index), BorderNode::key_len_has_suffix);
   EXPECT_EQ(upper->getLV(upper_index).value, &v);
+  EXPECT_EQ(gc.contain(n), true);
 }
