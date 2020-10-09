@@ -247,6 +247,9 @@ private:
 
 };
 
+/**
+ * deleteされるので、stack上ではなくheap上にアロケートする
+ */
 union LinkOrValue{
 
   LinkOrValue() = default;
@@ -736,7 +739,10 @@ public:
   ~BorderNode(){
     for(size_t i = 0; i < ORDER - 1; ++i){
       assert(getKeyLen(i) != key_len_layer);
-      delete getLV(i).value;
+      auto value = getLV(i).value;
+      if(value){
+        delete value;
+      }
     }
 
     getKeySuffixes().deleteAll();

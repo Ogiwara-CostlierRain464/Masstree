@@ -47,11 +47,11 @@ TEST(PermutationTest, util){
 
 TEST(PermutationTest, extractLinkOrValueWithIndexFor){
 
-  BorderNode n;
+  auto n = new BorderNode;
   skipped_border(n);
 
   Key k({1}, 2);
-  auto tuple = n.extractLinkOrValueWithIndexFor(k);
+  auto tuple = n->extractLinkOrValueWithIndexFor(k);
   EXPECT_EQ(std::get<2>(tuple), 4);
 }
 

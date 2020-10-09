@@ -148,22 +148,22 @@ static std::pair<Key, Key> not_conflict_89(){
   return std::pair(k8, k9);
 }
 
-static void skipped_border(BorderNode &n){
-  n.setKeyLen(0, 5);
-  n.setKeySlice(0, 2);
-  n.setKeyLen(1, 7);
-  n.setKeySlice(1, 2);
-  n.setKeyLen(2, 0);
-  n.setKeySlice(2, 0);
+static void skipped_border(BorderNode *n){
+  n->setKeyLen(0, 5);
+  n->setKeySlice(0, 2);
+  n->setKeyLen(1, 7);
+  n->setKeySlice(1, 2);
+  n->setKeyLen(2, 0);
+  n->setKeySlice(2, 0);
 
-  n.setKeyLen(3, 1);
-  n.setKeySlice(3, 1);
-  n.setKeyLen(4, 2);
-  n.setKeySlice(4, 1);
-  n.setKeyLen(5, 8);
-  n.setKeySlice(5, 1);
+  n->setKeyLen(3, 1);
+  n->setKeySlice(3, 1);
+  n->setKeyLen(4, 2);
+  n->setKeySlice(4, 1);
+  n->setKeyLen(5, 8);
+  n->setKeySlice(5, 1);
 
-  n.setPermutation(Permutation::from({
+  n->setPermutation(Permutation::from({
     3,4,5,0,1
   }));
 }
@@ -193,16 +193,16 @@ static void skipped_border2(BorderNode &n){
   }));
 }
 
-static void full_unsorted_border(BorderNode &n){
+static void full_unsorted_border(BorderNode *n){
   for(size_t i = 0; i <= 7; ++i){
-    n.setKeyLen(i, i+1);
-    n.setKeySlice(i, TWO);
+    n->setKeyLen(i, i+1);
+    n->setKeySlice(i, TWO);
   }
   for(size_t i = 8; i <= 14; ++i){
-    n.setKeyLen(i, i-7);
-    n.setKeySlice(i, ONE);
+    n->setKeyLen(i, i-7);
+    n->setKeySlice(i, ONE);
   }
-  n.setPermutation(Permutation::from({
+  n->setPermutation(Permutation::from({
     8,9,10,11,12,13,14,0,1,2,3,4,5,6,7
   }));
 }

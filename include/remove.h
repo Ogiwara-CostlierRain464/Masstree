@@ -80,6 +80,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
   auto n_index = p->findChildIndex(n);
 
   if(p->getNumKeys() >= 2){
+    // 左にシフト
     if(n_index == 0){
       for(size_t i = 0; i <= 13; ++i){
         p->setKeySlice(i, p->getKeySlice(i+1));
@@ -112,12 +113,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
         n->connectPrevAndNext();
-        delete p;
-        delete n;
-#ifndef NDEBUG
-        Alloc::decInterior();
-        Alloc::decBorder();
-#endif
+        gc.add(p);
+        gc.add(n);
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
@@ -126,12 +123,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         upper_layer->setLV(upper_index, LinkOrValue(pull_up_node));
 
         n->connectPrevAndNext();
-        delete p;
-        delete n;
-#ifndef NDEBUG
-        Alloc::decInterior();
-        Alloc::decBorder();
-#endif
+        gc.add(p);
+        gc.add(n);
         return std::make_pair(NewRoot, pull_up_node);
       }
     }else{
@@ -141,12 +134,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       pull_up_node->setParent(pp);
 
       n->connectPrevAndNext();
-      delete p;
-      delete n;
-#ifndef NDEBUG
-      Alloc::decInterior();
-      Alloc::decBorder();
-#endif
+      gc.add(p);
+      gc.add(n);
     }
   }
 

@@ -31,6 +31,8 @@ TEST(RemoveTest, not_empty_border){
   EXPECT_EQ(b->getKeySlice(p(1)), THREE);
   EXPECT_EQ(b->getKeySlice(1), TWO);
   EXPECT_EQ(b->getKeyLen(1), 10);
+  EXPECT_EQ(b->getKeyLen(1), 10);
+  EXPECT_EQ(gc.contain(b), false);
 }
 
 //endregion
@@ -54,10 +56,12 @@ TEST(RemoveTest, left_most_1){
   b->setNumKeys(1);
   c->setKeyLen(0, 1);
   c->setKeySlice(0, 14);
+  c->setPermutation(Permutation::fromSorted(1));
   d->setKeyLen(0, 1);
   d->setKeySlice(0, 15);
   d->setKeyLen(1, 1);
   d->setKeySlice(1, 20);
+  d->setPermutation(Permutation::fromSorted(2));
 
   d->setParent(b);
   d->setPrev(c);
@@ -67,8 +71,10 @@ TEST(RemoveTest, left_most_1){
 
   Key k({14}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
-  EXPECT_TRUE(pair.second == a);
-  EXPECT_TRUE(a->getChild(0) == d);
+  EXPECT_EQ(pair.second, a);
+  EXPECT_EQ(a->getChild(0), d);
+  EXPECT_TRUE(gc.contain(c));
+  EXPECT_TRUE(gc.contain(b));
 }
 
 TEST(RemoveTest, left_most_2){
@@ -110,6 +116,7 @@ TEST(RemoveTest, left_most_2){
   EXPECT_TRUE(pair.second == a);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 14);
+  EXPECT_TRUE(gc.contain(c));
 }
 
 TEST(RemoveTest, right_most){
@@ -142,6 +149,8 @@ TEST(RemoveTest, right_most){
   auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(1) == c);
+  EXPECT_TRUE(gc.contain(b));
+  EXPECT_TRUE(gc.contain(d));
 }
 
 TEST(RemoveTest, right_most_2){
@@ -168,6 +177,7 @@ TEST(RemoveTest, right_most_2){
   d->setKeySlice(0, 22);
   d->setKeyLen(1 ,1);
   d->setKeySlice(1, 23);
+  d->setPermutation(Permutation::fromSorted(2));
   e->setKeyLen(0, 1);
   e->setKeySlice(0, 24);
 
@@ -181,9 +191,10 @@ TEST(RemoveTest, right_most_2){
   b->setParent(a);
 
   Key k({24}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 22);
+  EXPECT_TRUE(gc.contain(e));
 }
 
 //endregion
@@ -220,6 +231,8 @@ TEST(RemoveTest, middle1){
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(0) == c);
   EXPECT_TRUE(c->getParent() == a);
+  EXPECT_TRUE(gc.contain(b));
+  EXPECT_TRUE(gc.contain(d));
 }
 
 TEST(RemoveTest, middle2){
@@ -279,6 +292,7 @@ TEST(RemoveTest, middle2){
   EXPECT_EQ(b->getKeySlice(1), 23);
   EXPECT_EQ(b->getKeySlice(2), 24);
   EXPECT_TRUE(b->getChild(2) == f);
+  EXPECT_TRUE(gc.contain(e));
 }
 //endregion
 
@@ -334,7 +348,8 @@ TEST(RemoveTest, new_root){
   EXPECT_TRUE(c->getParent() == nullptr);
   EXPECT_TRUE(c->getIsRoot());
   EXPECT_EQ(d->getPrev(), nullptr);
-  // bがいつ解放されるだろうか
+  EXPECT_TRUE(gc.contain(b));
+  EXPECT_TRUE(gc.contain(a));
 }
 
 TEST(RemoveTest, remove_layer_1){
@@ -364,6 +379,8 @@ TEST(RemoveTest, remove_layer_1){
   auto pair = remove(a, k, upper_b, 0, gc);
   EXPECT_EQ(pair.first, NewRoot);
   EXPECT_TRUE(pair.second == c);
+  EXPECT_TRUE(gc.contain(a));
+  EXPECT_TRUE(gc.contain(b));
 }
 
 TEST(RemoveTest, remove_layer_2){
@@ -376,6 +393,7 @@ TEST(RemoveTest, remove_layer_2){
   b->setKeyLen(1, 1);
   b->setKeySlice(1, 10);
   b->setIsRoot(true);
+  b->setPermutation(Permutation::fromSorted(2));
 
   Key k({9}, 1);
   auto pair = remove(b, k, upper_b, 0, gc);
@@ -442,6 +460,7 @@ TEST(RemoveTest, remove_all_layer2){
   c->setKeyLen(1, 8);
   c->setKeySlice(1, FIVE);
   c->setLV(1, LinkOrValue(new Value(8)));
+  c->setPermutation(Permutation::fromSorted(2));
 
   d->setKeyLen(0, 8);
   d->setKeySlice(0, FOUR);
@@ -454,7 +473,11 @@ TEST(RemoveTest, remove_all_layer2){
 
   auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, NotChange);
-  EXPECT_EQ(c->getKeySlice(0), FIVE);
+  auto c_p = c->getPermutation();
+  EXPECT_EQ(c->getKeySlice(c_p(0)), FIVE);
+  EXPECT_EQ(c->getKeyLen(0), 18);
+  EXPECT_EQ(c->getKeySlice(0), THREE);
+  EXPECT_TRUE(gc.contain(d));
 }
 
 TEST(RemoveTest, at_layer0_1){
@@ -481,6 +504,9 @@ TEST(RemoveTest, at_layer0_1){
   Key k({9}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, NewRoot);
+  EXPECT_TRUE(pair.second->getVersion().is_root);
+  EXPECT_TRUE(gc.contain(a));
+  EXPECT_TRUE(gc.contain(b));
 }
 
 TEST(RemoveTest, at_layer0_2){
@@ -492,6 +518,7 @@ TEST(RemoveTest, at_layer0_2){
   b->setKeyLen(1, 1);
   b->setKeySlice(1, 10);
   b->setIsRoot(true);
+  b->setPermutation(Permutation::fromSorted(2));
 
   Key k({9}, 1);
   auto pair = remove(b, k, nullptr, 0, gc);
