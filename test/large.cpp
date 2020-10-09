@@ -60,8 +60,9 @@ TEST(LargeTest, DISABLED_put_get_remove){
   srand(seed);
 
   constexpr size_t COUNT = 10000;
+  GC gc{};
 
-for(size_t mm = 0; mm < COUNT; ++mm){
+  for(size_t mm = 0; mm < COUNT; ++mm){
   Node *root = nullptr;
   std::array<Key*, COUNT> inserted_keys{};
   for(size_t i = 0; i < COUNT; ++i){
@@ -81,7 +82,7 @@ for(size_t mm = 0; mm < COUNT; ++mm){
 
   for(size_t i = 0; i < COUNT; ++i){
     auto k = inserted_keys[i];
-    root = remove_at_layer0(root, *k);
+    root = remove_at_layer0(root, *k, gc);
     delete k;
   }
 

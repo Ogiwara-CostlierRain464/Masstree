@@ -42,6 +42,8 @@ private:
   std::vector<InteriorNode*> interiors{};
 };
 
+using GC = GarbageCollector;
+
 }
 
 #endif //MASSTREE_GC_H

@@ -3,6 +3,7 @@
 
 #include "tree.h"
 #include "alloc.h"
+#include "gc.h"
 #include <algorithm>
 
 
@@ -22,7 +23,7 @@ enum RootChange : uint8_t {
  * @param upper_layer
  * @param upper_index
  */
-static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
+static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
   auto p = n->getPermutation();
   assert(n->getParent() == nullptr);
   assert(p.getNumKeys() == 1);
@@ -65,10 +66,12 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
  * @param n
  * @return new root
  */
-static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index){
+static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
   auto per = n->getPermutation();
   // すでに要素は削除済み
   assert(per.getNumKeys() == 0);
+
+  // ここもそうだけど、まずGCを渡して、そしてinsertの時にvinsertあげるのを追加する。
 
   if(n->getIsRoot()){
     // Layer 0以外ではここには到達しない
@@ -169,7 +172,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
  * @param upper_index rootをnext_layerとして持つnode中のindex
  * @return 新しいroot
  */
-static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index){
+static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index, GC &gc){
   if(root == nullptr){
     // Layer0以外では起きえない
     assert(upper_layer == nullptr);
@@ -228,7 +231,7 @@ forward:
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
       // 要素数への変更は生じない
-      handle_delete_layer_in_remove(n, upper_layer, upper_index);
+      handle_delete_layer_in_remove(n, upper_layer, upper_index, gc);
       return std::make_pair(LayerDeleted, nullptr);
     }
 
@@ -239,14 +242,14 @@ forward:
     auto current_num_keys = p.getNumKeys();
 
     if(current_num_keys == 0){
-      auto pair = delete_border_node_in_remove(n, upper_layer, upper_index);
+      auto pair = delete_border_node_in_remove(n, upper_layer, upper_index, gc);
       if(pair.first != NotChange){
         return pair;
       }
     }
   }else if(t == LAYER){
     k.next();
-    auto pair = remove(lv.next_layer, k, n, index);
+    auto pair = remove(lv.next_layer, k, n, index, gc);
     if(pair.first == LayerDeleted){
       k.back();
       goto retry;
@@ -259,8 +262,8 @@ forward:
   return std::make_pair(NotChange, root);
 }
 
-static Node *remove_at_layer0(Node *root, Key &k){
-  return remove(root, k, nullptr, 0).second;
+static Node *remove_at_layer0(Node *root, Key &k, GC &gc){
+  return remove(root, k, nullptr, 0, gc).second;
 }
 
 }

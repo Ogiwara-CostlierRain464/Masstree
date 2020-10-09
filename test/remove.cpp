@@ -12,6 +12,7 @@ class RemoveTest: public ::testing::Test{};
 
 TEST(RemoveTest, not_empty_border){
   auto b = new BorderNode;
+  GC gc{};
   b->setIsRoot(true);
 
   b->setKeyLen(0, 1);
@@ -23,7 +24,7 @@ TEST(RemoveTest, not_empty_border){
   b->setPermutation(Permutation::fromSorted(3));
 
   Key k({TWO}, 1);
-  auto pair = remove(b, k, nullptr, 0);
+  auto pair = remove(b, k, nullptr, 0, gc);
   auto p = b->getPermutation();
   EXPECT_TRUE(pair.second == b);
   EXPECT_EQ(b->getKeySlice(p(0)), ONE);
@@ -41,6 +42,7 @@ TEST(RemoveTest, left_most_1){
   auto b = new InteriorNode;
   auto c = new BorderNode;
   auto d = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 25);
   a->setIsRoot(true);
@@ -64,7 +66,7 @@ TEST(RemoveTest, left_most_1){
   b->setParent(a);
 
   Key k({14}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(0) == d);
 }
@@ -75,6 +77,7 @@ TEST(RemoveTest, left_most_2){
   auto c = new BorderNode;
   auto d = new BorderNode;
   auto e = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 15);
   a->setIsRoot(true);
@@ -103,7 +106,7 @@ TEST(RemoveTest, left_most_2){
   b->setParent(a);
 
   Key k({12}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 14);
@@ -114,6 +117,7 @@ TEST(RemoveTest, right_most){
   auto b = new InteriorNode;
   auto c = new BorderNode;
   auto d = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 20);
   a->setIsRoot(true);
@@ -135,7 +139,7 @@ TEST(RemoveTest, right_most){
   b->setParent(a);
 
   Key k({22}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(1) == c);
 }
@@ -146,6 +150,7 @@ TEST(RemoveTest, right_most_2){
   auto c = new BorderNode;
   auto d = new BorderNode;
   auto e = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 20);
   a->setIsRoot(true);
@@ -176,7 +181,7 @@ TEST(RemoveTest, right_most_2){
   b->setParent(a);
 
   Key k({24}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 22);
 }
@@ -189,6 +194,7 @@ TEST(RemoveTest, middle1){
   auto b = new InteriorNode;
   auto c = new BorderNode;
   auto d = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 25);
   a->setIsRoot(true);
@@ -210,7 +216,7 @@ TEST(RemoveTest, middle1){
   b->setParent(a);
 
   Key k({15}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(0) == c);
   EXPECT_TRUE(c->getParent() == a);
@@ -224,6 +230,7 @@ TEST(RemoveTest, middle2){
   auto e = new BorderNode;
   auto f = new BorderNode;
   auto g = new BorderNode;
+  GC gc{};
 
   a->setKeySlice(0, 20);
   a->setIsRoot(true);
@@ -266,7 +273,7 @@ TEST(RemoveTest, middle2){
   b->setParent(a);
 
   Key k({22}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(b->getNumKeys(), 3);
   EXPECT_EQ(b->getKeySlice(0), 21);
   EXPECT_EQ(b->getKeySlice(1), 23);
@@ -285,6 +292,7 @@ TEST(RemoveTest, new_root){
   auto d = new BorderNode;
   auto e = new BorderNode;
   auto f = new BorderNode;
+  GC gc{};
 
   upper_node->setLV(upper_index, LinkOrValue(a));
   a->setKeySlice(0, 25);
@@ -321,7 +329,7 @@ TEST(RemoveTest, new_root){
   b->setParent(a);
 
   Key k({9}, 1);
-  auto pair = remove(a, k, upper_node, upper_index);
+  auto pair = remove(a, k, upper_node, upper_index, gc);
   ASSERT_TRUE(upper_node->getLV(upper_index).next_layer == c);
   EXPECT_TRUE(c->getParent() == nullptr);
   EXPECT_TRUE(c->getIsRoot());
@@ -336,6 +344,7 @@ TEST(RemoveTest, remove_layer_1){
   auto a = new InteriorNode;
   auto b = new BorderNode;
   auto c = new BorderNode;
+  GC gc{};
   a->setKeySlice(0, 10);
   a->setChild(0, b);
   a->setChild(1, c);
@@ -352,7 +361,7 @@ TEST(RemoveTest, remove_layer_1){
   b->setNext(c);
 
   Key k({9}, 1);
-  auto pair = remove(a, k, upper_b, 0);
+  auto pair = remove(a, k, upper_b, 0, gc);
   EXPECT_EQ(pair.first, NewRoot);
   EXPECT_TRUE(pair.second == c);
 }
@@ -361,6 +370,7 @@ TEST(RemoveTest, remove_layer_2){
   // rootのBorderNodeがサイズ1になった時
   auto upper_b = new BorderNode;
   auto b = new BorderNode;
+  GC gc{};
   b->setKeyLen(0, 1);
   b->setKeySlice(0, 9);
   b->setKeyLen(1, 1);
@@ -368,7 +378,7 @@ TEST(RemoveTest, remove_layer_2){
   b->setIsRoot(true);
 
   Key k({9}, 1);
-  auto pair = remove(b, k, upper_b, 0);
+  auto pair = remove(b, k, upper_b, 0, gc);
   EXPECT_EQ(pair.first, NotChange);
 }
 
@@ -377,6 +387,7 @@ TEST(RemoveTest, remove_all_layer){
   auto b = new BorderNode;
   auto c = new BorderNode;
   auto d = new BorderNode;
+  GC gc{};
 
   a->setKeyLen(0, BorderNode::key_len_layer);
   a->setKeySlice(0, ONE);
@@ -402,7 +413,7 @@ TEST(RemoveTest, remove_all_layer){
     ONE,TWO,THREE,FOUR
   }, 8);
 
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, LayerDeleted);
 }
 
@@ -412,6 +423,7 @@ TEST(RemoveTest, remove_all_layer2){
   auto b = new BorderNode;
   auto c = new BorderNode;
   auto d = new BorderNode;
+  GC gc{};
 
   a->setKeyLen(0, BorderNode::key_len_layer);
   a->setKeySlice(0, ONE);
@@ -440,7 +452,7 @@ TEST(RemoveTest, remove_all_layer2){
     ONE,TWO,THREE,FOUR
   }, 8);
 
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, NotChange);
   EXPECT_EQ(c->getKeySlice(0), FIVE);
 }
@@ -450,6 +462,7 @@ TEST(RemoveTest, at_layer0_1){
   auto a = new InteriorNode;
   auto b = new BorderNode;
   auto c = new BorderNode;
+  GC gc{};
   a->setKeySlice(0, 10);
   a->setChild(0, b);
   a->setChild(1, c);
@@ -466,13 +479,14 @@ TEST(RemoveTest, at_layer0_1){
   b->setNext(c);
 
   Key k({9}, 1);
-  auto pair = remove(a, k, nullptr, 0);
+  auto pair = remove(a, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, NewRoot);
 }
 
 TEST(RemoveTest, at_layer0_2){
   // rootのBorderNodeがサイズ1になった時
   auto b = new BorderNode;
+  GC gc{};
   b->setKeyLen(0, 1);
   b->setKeySlice(0, 9);
   b->setKeyLen(1, 1);
@@ -480,7 +494,7 @@ TEST(RemoveTest, at_layer0_2){
   b->setIsRoot(true);
 
   Key k({9}, 1);
-  auto pair = remove(b, k, nullptr, 0);
+  auto pair = remove(b, k, nullptr, 0, gc);
   EXPECT_EQ(pair.first, NotChange);
 }
 //endregion
@@ -488,6 +502,7 @@ TEST(RemoveTest, at_layer0_2){
 TEST(RemoveTest, handle_delete_layer_in_remove){
   auto upper = new BorderNode{};
   auto n = new BorderNode{};
+  GC gc{};
   auto upper_index = 4;
 
   upper->setKeyLen(upper_index, BorderNode::key_len_layer);
@@ -502,7 +517,7 @@ TEST(RemoveTest, handle_delete_layer_in_remove){
   n->setPermutation(Permutation::from({1}));
   n->setIsRoot(true);
 
-  handle_delete_layer_in_remove(n, upper, upper_index);
+  handle_delete_layer_in_remove(n, upper, upper_index, gc);
 
   EXPECT_EQ(upper->getKeyLen(upper_index), BorderNode::key_len_has_suffix);
   EXPECT_EQ(upper->getLV(upper_index).value, &v);

@@ -271,6 +271,7 @@ TEST(TreeTest, duplex){
 
 TEST(TreeTest, layer_change){
   Node *root = nullptr;
+  GC gc{};
   Key k1({
     ONE, TWO, FIVE
   }, 8);
@@ -285,7 +286,7 @@ TEST(TreeTest, layer_change){
   ASSERT_EQ(*p, 5);
 
   k2.reset();
-  root = remove_at_layer0(root, k2);
+  root = remove_at_layer0(root, k2, gc);
 
   k1.reset();
   auto p2 = get(root, k1);
