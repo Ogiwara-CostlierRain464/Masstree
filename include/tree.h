@@ -406,6 +406,7 @@ public:
 
   void delete_ptr(size_t i){
     auto ptr = get(i);
+    assert(ptr != nullptr);
     delete ptr;
 #ifndef NDEBUG
     Alloc::decSuffix();
@@ -417,7 +418,7 @@ public:
     for(size_t i = 0; i < Node::ORDER - 1; ++i){
       auto p = get(i);
       if(p != nullptr){
-        delete p;
+        delete_ptr(i);
       }
     }
   }
@@ -740,8 +741,12 @@ public:
     for(size_t i = 0; i < ORDER - 1; ++i){
       assert(getKeyLen(i) != key_len_layer);
       auto value = getLV(i).value;
-      if(value){
+      if(value != nullptr){
         delete value;
+        setLV(i, LinkOrValue{});
+#ifndef NDEBUG
+        Alloc::decValue();
+#endif
       }
     }
 

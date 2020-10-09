@@ -169,6 +169,12 @@ static void insert_into_border(BorderNode *border, const Key &key, Value *value)
   if(reuse){
     // reuseする場合には、わざわざ上書きする必要はないかもしれない。
     border->setInserting(true);
+    // わざわざdeleteする必要なさそう
+    border->getKeySuffixes().delete_ptr(insertion_point_ts);
+    delete border->getLV(insertion_point_ts).value;
+#ifndef NDEBUG
+    Alloc::decValue();
+#endif
   }
 
   //上書きしても良いのか？…

@@ -17,10 +17,12 @@ public:
   GarbageCollector &operator=(const GarbageCollector &other) = delete;
 
   void add(BorderNode* b){
+    assert(!contain(b));
     borders.push_back(b);
   }
 
   void add(InteriorNode* i){
+    assert(!contain(i));
     interiors.push_back(i);
   }
 
@@ -36,12 +38,19 @@ public:
   void run(){
     for(auto &b: borders){
       // destructorでvalueとsuffixも解放される
+      // TODO: BorderNodeの削除と同時にその子要素を削除するのは不適切であろう。
       delete b;
+#ifndef NDEBUG
+      Alloc::decBorder();
+#endif
     }
     borders.clear();
 
     for(auto &i: interiors){
       delete i;
+#ifndef NDEBUG
+      Alloc::decInterior();
+#endif
     }
     interiors.clear();
   }
