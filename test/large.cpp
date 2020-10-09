@@ -97,7 +97,7 @@ TEST(LargeTest, DISABLED_put_get_remove){
   Alloc::reset();
 }
 
-TEST(LargeTest, random_op){
+TEST(LargeTest, DISABLED_random_op){
   auto seed = time(0);
   srand(seed);
 

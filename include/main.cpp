@@ -16,6 +16,8 @@ Key *make_key(){
 }
 
 int main(){
+  GC gc{};
+
   for(;;){
     auto seed = time(0);
     srand(seed);
@@ -45,7 +47,7 @@ int main(){
 
     for(size_t i = 0; i < COUNT; ++i){
       auto k = inserted_keys[i];
-      root = remove_at_layer0(root, *k);
+      root = remove_at_layer0(root, *k, gc);
       delete k;
     }
 
