@@ -4,6 +4,7 @@
 #include "../sample.h"
 #include <gtest/gtest.h>
 #include <thread>
+#include <xmmintrin.h>
 
 using namespace masstree;
 
@@ -40,7 +41,77 @@ TEST(MultiPutTest, updates){
   b.join();
 }
 
-TEST(MultiPutTest, border_inserts){
-  Key k({1}, 1);
-  auto root = put_at_layer0(nullptr, k, new Value(1));
+/**
+ * No key rearrangement, and therefore no version increment, is required.
+ * @see §4.6.2
+ */
+TEST(MultiPutTest, border_inserts1){
+  for(size_t i = 0; i < 1000; ++i) {
+
+    Key k({0}, 1);
+    auto root = put_at_layer0(nullptr, k, new Value(0));
+
+    std::atomic_bool ready{false};
+    auto w1 = [&ready, &root](){
+      while (!ready){ _mm_pause(); }
+
+      for(size_t i = 0; i < 15; ++i){
+        Key k({i}, 1);
+        put_at_layer0(root, k, new Value(i));
+      }
+    };
+
+    auto w2 = [&ready, &root](){
+      while (!ready){ _mm_pause(); }
+
+      for(size_t i = 0; i < 15; ++i){
+        Key k({i}, 1);
+        get(root, k);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready.store(true);
+    a.join();
+    b.join();
+  }
+}
+
+/**
+ * when removed slots are reused, Masstree must update the v-insert field.
+ *
+ * @see §4.6.5
+ */
+TEST(MultiPutTest, border_inserts2){
+  for(size_t _ = 0; _ < 10000; ++_){
+    Key k1({1}, 1); auto root = put_at_layer0(nullptr, k1, new Value(1));
+    std::atomic_bool ready{false};
+    auto w1 = [&root, &ready, &k1](){
+      while (!ready){ _mm_pause(); }
+
+      auto p = get(root, k1);
+      if(p != nullptr){
+        EXPECT_EQ(p->getBody(), 1);
+      }else{
+        EXPECT_TRUE(true);
+      }
+    };
+
+    auto w2 = [&root, &ready, &k1](){
+      GC gc{};
+      Key k2({2}, 2);
+      remove_at_layer0(root, k1, gc);
+      while (!ready){ _mm_pause(); }
+      put_at_layer0(root, k2, new Value(2));
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready.store(true);
+    a.join();
+    b.join();
+
+    // 状況を作り出したい…
+  }
 }

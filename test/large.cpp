@@ -60,7 +60,7 @@ TEST(LargeTest, DISABLED_put_get){
   }
 }
 
-TEST(LargeTest, DISABLED_put_get_remove){
+TEST(LargeTest, put_get_remove){
   auto seed = time(0);
   srand(seed);
 

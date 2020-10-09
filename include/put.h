@@ -598,6 +598,7 @@ forward:
       }else{
         n->lock();
         auto may_new_root = split(n, k, value);
+        assert(n->isUnlocked());
         if(may_new_root != nullptr){
           // rootがsplitによって新しくなったので、Layer0以外においては
           // 上のlayerのlv.next_layerを更新する必要がある

@@ -135,6 +135,11 @@ public:
   }
 
   [[nodiscard]]
+  inline bool isUnlocked() const{
+    return !getLocked();
+  }
+
+  [[nodiscard]]
   inline bool getSplitting() const{
     auto v = getVersion();
     return v.splitting;
