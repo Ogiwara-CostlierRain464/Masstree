@@ -130,8 +130,8 @@ TEST(MultiPutTest, border_inserts3){
       auto root = put_at_layer0(nullptr, k1, new Value(1), gc);
       auto w1 = [&root, &k1](){
         auto p = get(root, k1);
-        EXPECT_TRUE(has_locked_marker.isNotMarked());
-        EXPECT_EQ(p->getBody(), 1);
+        EXPECT_TRUE(has_locked_marker.isMarked());
+        EXPECT_EQ(p, nullptr);
       };
 
       auto w2 = [&root, &k1](){
