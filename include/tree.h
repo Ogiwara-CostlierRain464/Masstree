@@ -164,6 +164,18 @@ public:
     setVersion(v);
   }
 
+  [[nodiscard]]
+  inline bool getDeleted() const{
+    auto v = getVersion();
+    return v.deleted;
+  }
+
+  inline void setDeleted(bool deleted){
+    auto v = getVersion();
+    v.deleted = deleted;
+    setVersion(v);
+  }
+
 
 private:
   std::atomic<Version> version = {};
