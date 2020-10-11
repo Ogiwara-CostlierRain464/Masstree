@@ -153,6 +153,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
  * @param upper_index rootをnext_layerとして持つnode中のindex
  * @return 新しいroot
  */
+[[maybe_unused]]
 static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index, GC &gc){
   if(root == nullptr){
     // Layer0以外では起きえない
@@ -243,6 +244,7 @@ forward:
   return std::make_pair(NotChange, root);
 }
 
+[[nodiscard]]
 static Node *remove_at_layer0(Node *root, Key &k, GC &gc){
   return remove(root, k, nullptr, 0, gc).second;
 }

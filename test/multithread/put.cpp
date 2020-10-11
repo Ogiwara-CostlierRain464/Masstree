@@ -23,7 +23,7 @@ TEST(MultiPutTest, updates){
   constexpr size_t COUNT = 10000;
   auto w1 = [&root, &k](){
     for(size_t i = 0; i < COUNT; ++i){
-      put_at_layer0(root, k, new Value(i));
+      root = put_at_layer0(root, k, new Value(i));
     }
   };
 
@@ -56,7 +56,7 @@ TEST(MultiPutTest, border_inserts1){
 
       for(size_t i = 0; i < 15; ++i){
         Key k({i}, 1);
-        put_at_layer0(root, k, new Value(i));
+        root = put_at_layer0(root, k, new Value(i));
       }
     };
 
@@ -100,8 +100,36 @@ TEST(MultiPutTest, border_inserts2){
     get_handler1.waitGive();
     GC gc{};
     Key k2({2}, 2);
-    remove_at_layer0(root, k1, gc);
-    put_at_layer0(root, k2, new Value(2));
+    root = remove_at_layer0(root, k1, gc);
+    root = put_at_layer0(root, k2, new Value(2));
+    get_handler1.back();
+  };
+
+  std::thread a(w1);
+  std::thread b(w2);
+  a.join();
+  b.join();
+}
+
+/**
+ * getの実行中、別のスレッドがtree全体を削除するケース。
+ */
+TEST(MultiPutTest, border_inserts3){
+  get_handler1.use();
+  Key k1({1}, 1);
+  auto root = put_at_layer0(nullptr, k1, new Value(1));
+  auto w1 = [&root, &k1](){
+    auto p = get(root, k1);
+    EXPECT_TRUE(has_locked_marker.isNotMarked());
+    EXPECT_EQ(p->getBody(), 1);
+  };
+
+  auto w2 = [&root, &k1](){
+    get_handler1.waitGive();
+    GC gc{};
+    Key k2({2}, 2);
+    root = remove_at_layer0(root, k1, gc);
+    root = put_at_layer0(root, k2, new Value(2));
     get_handler1.back();
   };
 

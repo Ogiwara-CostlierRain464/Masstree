@@ -9,7 +9,9 @@
 namespace masstree{
 
 #ifndef NDEBUG
+// lvを取得した直後のポイント　
 static SequentialHandler get_handler1{};
+// has_lockedである事が確認された直後のポイント
 static Marker has_locked_marker{};
 #endif
 

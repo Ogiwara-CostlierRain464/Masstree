@@ -61,6 +61,12 @@ public:
   inline bool isMarked() const{
     return marked;
   }
+
+  [[nodiscard]]
+  inline bool isNotMarked() const{
+    return !isMarked();
+  }
+
 private:
   bool marked{false};
 };

@@ -564,6 +564,7 @@ ascend:
  * @param upper_index rootをnext_layerとして持つnode中のindex
  * @return
  */
+[[maybe_unused]]
 static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index){
   if(root == nullptr){
     // Layer0が空の時のみここに来る
@@ -630,6 +631,7 @@ forward:
   return root;
 }
 
+[[nodiscard]]
 static Node *put_at_layer0(Node *root, Key &k, Value *value){
   return put(root, k, value, nullptr, 0);
 }
