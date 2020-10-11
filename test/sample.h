@@ -191,6 +191,8 @@ static void skipped_border2(BorderNode &n){
   n.setPermutation(Permutation::from({
     3,4,5,0,1
   }));
+
+  n.setIsRoot(true);
 }
 
 static void full_unsorted_border(BorderNode *n){

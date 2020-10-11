@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "sample.h"
+#include "../include/put.h"
 
 using namespace masstree;
 
@@ -69,15 +70,17 @@ TEST(BorderNodeTest, insertPoint){
   skipped_border2(n);
 
   Key k({3}, 1);
-  auto pair = n.insertPoint(k);
+  auto pair = n.insertPoint();
   EXPECT_EQ(pair.first, 2);
   EXPECT_EQ(pair.second, true);
+  put(&n, k, new Value(1), nullptr, 0);
   Key k1({1,2,3}, 4);
-  pair = n.insertPoint(k1);
+  pair = n.insertPoint();
   EXPECT_EQ(pair.first, 6);
   EXPECT_EQ(pair.second, true);
+  put(&n, k1, new Value(1), nullptr, 0);
   Key k2({1}, 3);
-  pair = n.insertPoint(k2);
-  EXPECT_EQ(pair.first, 2);
+  pair = n.insertPoint();
+  EXPECT_EQ(pair.first, 7);
   EXPECT_EQ(pair.second, false);
 }

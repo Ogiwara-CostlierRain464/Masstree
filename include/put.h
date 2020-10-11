@@ -163,15 +163,16 @@ static void insert_into_border(BorderNode *border, const Key &key, Value *value)
   // 積極的に避ける事ができればinsertingのマークの必要性が減るのか？
   // いや、しかしながら、それでは同じkeyが存在することになってしまう。
   // やはり、かぶっているkeyがあったらそれを上書きしにいく、という方針でないとまずいだろう。
-  auto pair = border->insertPoint(key);
+  auto pair = border->insertPoint();
   auto insertion_point_ts = pair.first;
   auto reuse = pair.second;
 
   if(reuse){
-    // reuseする場合には、わざわざ上書きする必要はないかもしれない。
     border->setInserting(true);
-    // わざわざdeleteする必要なさそう
-    border->getKeySuffixes().delete_ptr(insertion_point_ts);
+    // updateの時と同じように、古い値はすぐには消さない方がいい
+    if(border->getKeySuffixes().get(insertion_point_ts) != nullptr){
+      border->getKeySuffixes().delete_ptr(insertion_point_ts);
+    }
     delete border->getLV(insertion_point_ts).value;
 #ifndef NDEBUG
     Alloc::decValue();

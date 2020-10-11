@@ -571,11 +571,10 @@ public:
    * keyをinsertすべきpointを返す。
    * もしremoved slotがreuseされることになるならば、二番目の要素がtrueになる。
    * その時にはinsert側はv_insertを更新する必要がある
-   * @param key
    * @return
    */
   [[nodiscard]]
-  std::pair<size_t, bool> insertPoint(const Key &key) const{
+  std::pair<size_t, bool> insertPoint() const{
     assert(getPermutation().isNotFull());
     for(size_t i = 0; i < ORDER - 1; ++i){
       auto len = getKeyLen(i);
@@ -780,7 +779,7 @@ private:
 
 
 static std::pair<BorderNode *, Version> findBorder(Node *root, const Key &key){
-  retry:
+retry:
   auto n = root; auto v = n->stableVersion();
 
   if(!v.is_root){
