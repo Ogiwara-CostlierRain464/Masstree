@@ -108,7 +108,7 @@ TEST(MultiPutTest, border_inserts2){
         root = remove_at_layer0(root, k1, gc);
         root = put_at_layer0(root, k2, new Value(2), gc);
         get_handler1.back();
-        gc.contain(v1);
+        EXPECT_TRUE(gc.contain(v1));
       };
 
       std::thread a(w1);

@@ -46,6 +46,7 @@ public:
     return std::find(interiors.begin(), interiors.end(), n) != interiors.end();
   }
 
+  [[nodiscard]]
   bool contain(Value const *n) const{
     return std::find(values.begin(), values.end(), n) != values.end();
   }
