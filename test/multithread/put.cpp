@@ -85,14 +85,15 @@ TEST(MultiPutTest, border_inserts1){
 TEST(MultiPutTest, border_inserts2){
   get_handler1.use();
 
-  Key k1({1}, 1); auto root = put_at_layer0(nullptr, k1, new Value(1));
+  Key k0({0}, 1);
+  Key k1({1}, 1);
+  auto root = put_at_layer0(nullptr, k0, new Value(-1));
+  root = put_at_layer0(root, k1, new Value(1));
+
   auto w1 = [&root, &k1](){
     auto p = get(root, k1);
-    if(p != nullptr){
-      EXPECT_EQ(p->getBody(), 1);
-    }else{
-      EXPECT_TRUE(true);
-    }
+    EXPECT_TRUE(has_locked_marker.isMarked());
+    EXPECT_TRUE(p == nullptr);
   };
 
   auto w2 = [&root, &k1](){
@@ -108,6 +109,4 @@ TEST(MultiPutTest, border_inserts2){
   std::thread b(w2);
   a.join();
   b.join();
-
-  // 状況を作り出したい…
 }

@@ -182,10 +182,10 @@ static void insert_into_border(BorderNode *border, const Key &key, Value *value)
   //上書きしても良いのか？…
   // TODO: handle value delete.
   // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
-  border->setKeyLen(insertion_point_ts, 0);
-  border->setKeySlice(insertion_point_ts, 0);
+//  border->setKeyLen(insertion_point_ts, 0);
+//  border->setKeySlice(insertion_point_ts, 0);
   border->getKeySuffixes().set(insertion_point_ts, nullptr);
-  border->setLV(insertion_point_ts, LinkOrValue{});
+//  border->setLV(insertion_point_ts, LinkOrValue{});
 
   if(1 <= cursor.size and cursor.size <= 7){
     border->setKeyLen(insertion_point_ts, cursor.size);

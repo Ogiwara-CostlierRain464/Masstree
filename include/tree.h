@@ -575,6 +575,7 @@ public:
    */
   [[nodiscard]]
   std::pair<size_t, bool> insertPoint() const{
+    // NOTE: ここでなるべくlen=0のslotを使うことにより、性能をあげる事ができる
     assert(getPermutation().isNotFull());
     for(size_t i = 0; i < ORDER - 1; ++i){
       auto len = getKeyLen(i);

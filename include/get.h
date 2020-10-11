@@ -9,7 +9,8 @@
 namespace masstree{
 
 #ifndef NDEBUG
-static ThreadHandler get_handler1{};
+static SequentialHandler get_handler1{};
+static Marker has_locked_marker{};
 #endif
 
 static Value *get(Node *root, Key &k){
@@ -29,6 +30,9 @@ if(get_handler1.isUsed())
   get_handler1.giveAndWaitBack();
 #endif
   if((n->getVersion() ^ v) > Version::has_locked){
+#ifndef NDEBUG
+    has_locked_marker.mark();
+#endif
     v = n->stableVersion(); auto next = n->getNext();
     while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
       n = next; v = n->stableVersion(); next = n->getNext();
