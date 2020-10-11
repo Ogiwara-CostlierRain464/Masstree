@@ -132,7 +132,7 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, multi_insert_border_test){
+TEST(LargeTest, DISABLED_multi_insert_border_test){
   auto seed = 1602407569;
   srand(seed);
 

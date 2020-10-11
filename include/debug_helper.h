@@ -69,8 +69,9 @@ private:
 class Marker{
 public:
   inline void markIfUsed(){
-    if(isUsed())
+    if(isUsed()){
       marked = true;
+    }
   }
 
   inline void use(const std::function<void(void)> &f){

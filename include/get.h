@@ -25,8 +25,14 @@ static Value *get(Node *root, Key &k){
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
 forward:
-  if(v.deleted)
-    goto retry;
+  if(v.deleted){
+    // 探していたKeyが上のLayerに行ってしまった時
+    if(v.is_root){
+      return nullptr;
+    }else{
+      goto retry;
+    }
+  }
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
 #ifndef NDEBUG
   get_handler1.giveAndWaitBackIfUsed();

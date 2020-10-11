@@ -17,6 +17,10 @@ struct Version{
    * versionの前後のスナップショットに対して排他論理和を取り、
    * bit列に変化があれば「他のthreadがlockを取った、もしくはlockを取った後に外した」
    * と判断する。
+   *
+   * NOTE: has lockedな状態が単にlocked, inserting, splitting, vinsert, vsplitの変化だけなのか、
+   * それとも他の全ても含めるのか、で選択の余地がある
+   * おそらく、特定のfieldの変化のみを追うことによって並行性性能をあげられそうだ
    */
   static constexpr uint32_t has_locked = 0;
 

@@ -18,11 +18,13 @@ public:
 
   void add(BorderNode* b){
     assert(!contain(b));
+    assert(b->getDeleted());
     borders.push_back(b);
   }
 
   void add(InteriorNode* i){
     assert(!contain(i));
+    assert(i->getDeleted());
     interiors.push_back(i);
   }
 

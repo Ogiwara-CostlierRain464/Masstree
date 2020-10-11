@@ -53,6 +53,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   n->setLV(p(0), LinkOrValue{});
   n->getKeySuffixes().set(p(0), nullptr);
 
+  n->setDeleted(true);
   gc.add(n);
 }
 
@@ -75,6 +76,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     // Layer 0以外ではここには到達しない
     assert(n->getParent() == nullptr);
     assert(upper_layer == nullptr);
+    n->setDeleted(true);
     gc.add(n);
     return std::make_pair(LayerDeleted, nullptr);
   }
@@ -102,6 +104,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     p->decNumKeys();
 
     n->connectPrevAndNext();
+    n->setDeleted(true);
     gc.add(n);
     // rootの変更無し
   }else{
@@ -116,6 +119,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
         n->connectPrevAndNext();
+        p->setDeleted(true);
+        n->setDeleted(true);
         gc.add(p);
         gc.add(n);
         return std::make_pair(NewRoot, pull_up_node);
@@ -126,6 +131,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         upper_layer->setLV(upper_index, LinkOrValue(pull_up_node));
 
         n->connectPrevAndNext();
+        p->setDeleted(true);
+        n->setDeleted(true);
         gc.add(p);
         gc.add(n);
         return std::make_pair(NewRoot, pull_up_node);
@@ -137,6 +144,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       pull_up_node->setParent(pp);
 
       n->connectPrevAndNext();
+      p->setDeleted(true);
+      n->setDeleted(true);
       gc.add(p);
       gc.add(n);
     }
