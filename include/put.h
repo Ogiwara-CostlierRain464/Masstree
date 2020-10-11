@@ -600,12 +600,8 @@ forward:
       }
     }
   }else if(t == VALUE){
-    // 上書きする
-    // NOTE: 並行時には、古い値をGCする時に注意
-    delete n->getLV(index).value;
-#ifndef NDEBUG
-    Alloc::decValue();
-#endif
+    // 上書き
+    gc.add(n->getLV(index).value);
     n->setLV(index, LinkOrValue(value));
   }else if(t == LAYER){
     k.next();

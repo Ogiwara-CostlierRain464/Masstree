@@ -15,13 +15,13 @@ class MultiPutTest: public ::testing::Test{};
  *
  * @see §4.6.1
  */
-TEST(MultiPutTest, updates){
+TEST(MultiPutTest, update1){
   GC gc{};
   Node* root = nullptr;
   Key k({1}, 1);
   root = put_at_layer0(root, k, new Value(1), gc);
 
-  constexpr size_t COUNT = 10000;
+  constexpr size_t COUNT = 100;
   auto w1 = [&root, &k](){
     GC gc{};
     for(size_t i = 0; i < COUNT; ++i){

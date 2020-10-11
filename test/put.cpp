@@ -295,3 +295,15 @@ TEST(PutTest, split_keys_among2){
   EXPECT_EQ(n2->getKeySlice(0), TWO);
 
 }
+
+/**
+ * 値を上書きした時に、古い値はGCされる
+ */
+TEST(PutTest, update_and_gc){
+  Key k({1}, 1);
+  GC gc{};
+  auto v1 = new Value(1);
+  auto root = put_at_layer0(nullptr, k, v1, gc);
+  root = put_at_layer0(root, k, new Value(2), gc);
+  EXPECT_TRUE(gc.contain(v1));
+}
