@@ -92,7 +92,8 @@ TEST(MultiPutTest, border_inserts2){
       Key k0({0}, 1);
       Key k1({1}, 1);
       auto root = put_at_layer0(nullptr, k0, new Value(-1), gc);
-      root = put_at_layer0(root, k1, new Value(1), gc);
+      auto v1 = new Value(1);
+      root = put_at_layer0(root, k1, v1, gc);
 
       auto w1 = [&root, &k1](){
         auto p = get(root, k1);
@@ -100,13 +101,14 @@ TEST(MultiPutTest, border_inserts2){
         EXPECT_TRUE(p == nullptr);
       };
 
-      auto w2 = [&root, &k1](){
+      auto w2 = [&root, &k1, &v1](){
         get_handler1.waitGive();
         GC gc{};
         Key k2({2}, 2);
         root = remove_at_layer0(root, k1, gc);
         root = put_at_layer0(root, k2, new Value(2), gc);
         get_handler1.back();
+        gc.contain(v1);
       };
 
       std::thread a(w1);
