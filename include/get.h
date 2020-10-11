@@ -2,9 +2,15 @@
 #define MASSTREE_GET_H
 
 #include "tree.h"
+#include "debug_helper.h"
 #include <algorithm>
+#include <xmmintrin.h>
 
 namespace masstree{
+
+#ifndef NDEBUG
+static ThreadHandler get_handler1{};
+#endif
 
 static Value *get(Node *root, Key &k){
   if(root == nullptr){
@@ -18,6 +24,10 @@ forward:
   if(v.deleted)
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
+#ifndef NDEBUG
+if(get_handler1.isUsed())
+  get_handler1.giveAndWaitBack();
+#endif
   if((n->getVersion() ^ v) > Version::has_locked){
     v = n->stableVersion(); auto next = n->getNext();
     while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){

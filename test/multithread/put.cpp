@@ -4,7 +4,6 @@
 #include "../sample.h"
 #include <gtest/gtest.h>
 #include <thread>
-#include <xmmintrin.h>
 
 using namespace masstree;
 
@@ -84,34 +83,31 @@ TEST(MultiPutTest, border_inserts1){
  * @see §4.6.5
  */
 TEST(MultiPutTest, border_inserts2){
-  for(size_t _ = 0; _ < 10000; ++_){
-    Key k1({1}, 1); auto root = put_at_layer0(nullptr, k1, new Value(1));
-    std::atomic_bool ready{false};
-    auto w1 = [&root, &ready, &k1](){
-      while (!ready){ _mm_pause(); }
+  get_handler1.use();
 
-      auto p = get(root, k1);
-      if(p != nullptr){
-        EXPECT_EQ(p->getBody(), 1);
-      }else{
-        EXPECT_TRUE(true);
-      }
-    };
+  Key k1({1}, 1); auto root = put_at_layer0(nullptr, k1, new Value(1));
+  auto w1 = [&root, &k1](){
+    auto p = get(root, k1);
+    if(p != nullptr){
+      EXPECT_EQ(p->getBody(), 1);
+    }else{
+      EXPECT_TRUE(true);
+    }
+  };
 
-    auto w2 = [&root, &ready, &k1](){
-      GC gc{};
-      Key k2({2}, 2);
-      remove_at_layer0(root, k1, gc);
-      while (!ready){ _mm_pause(); }
-      put_at_layer0(root, k2, new Value(2));
-    };
+  auto w2 = [&root, &k1](){
+    get_handler1.waitGive();
+    GC gc{};
+    Key k2({2}, 2);
+    remove_at_layer0(root, k1, gc);
+    put_at_layer0(root, k2, new Value(2));
+    get_handler1.back();
+  };
 
-    std::thread a(w1);
-    std::thread b(w2);
-    ready.store(true);
-    a.join();
-    b.join();
+  std::thread a(w1);
+  std::thread b(w2);
+  a.join();
+  b.join();
 
-    // 状況を作り出したい…
-  }
+  // 状況を作り出したい…
 }
