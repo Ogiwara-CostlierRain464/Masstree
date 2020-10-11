@@ -81,6 +81,7 @@ public:
       p->lock();
     }
     if(p != reinterpret_cast<Node *>(getParent())){
+      assert(p != nullptr);
       p->unlock(); goto retry;
     }
     return reinterpret_cast<InteriorNode *>(p);
@@ -405,6 +406,7 @@ public:
     suffixes[i].store(ptr, std::memory_order_release);
   }
 
+  [[nodiscard]]
   inline BigSuffix* get(size_t i) const{
     return suffixes[i].load(std::memory_order_acquire);
   }
@@ -435,6 +437,7 @@ public:
    * @param from
    * @return
    */
+  [[nodiscard]]
   bool isSame(size_t i, const Key &key, size_t from) const{
     return get(i)->isSame(key, from);
   }
@@ -571,33 +574,18 @@ public:
    * @param key
    * @return
    */
+  [[nodiscard]]
   std::pair<size_t, bool> insertPoint(const Key &key) const{
-    // first, find
-    auto current = key.getCurrentSlice();
-    if(!key.hasNext()){
-      for(size_t i = 0; i < ORDER - 1; ++i){
-        if(getKeySlice(i) == current.slice
-        and getKeyLen(i) == current.size + 9){
-          return std::make_pair(i, true);
-        }
-      }
-    }else{
-      for(size_t i = 0; i < ORDER - 1; ++i){
-        if(getKeySlice(i) == current.slice
-        and getKeyLen(i) == 18){
-          if(getKeySuffixes().isSame(i, key, key.cursor+1)){
-            return std::make_pair(i, true);
-          }
-        }
-      }
-    }
-
+    assert(getPermutation().isNotFull());
     for(size_t i = 0; i < ORDER - 1; ++i){
-      if(isKeyLenUnused(getKeyLen(i))){
+      auto len = getKeyLen(i);
+      if(len == 0){
         return std::make_pair(i, false);
       }
+      if(10 <= len and len <= 18){
+        return std::make_pair(i, true);
+      }
     }
-
     assert(false);
   }
 
@@ -658,7 +646,7 @@ public:
    * @param i
    * @return
    */
-  bool isKeyRemoved(uint8_t i){
+  bool isKeyRemoved(uint8_t i) const{
     auto len = getKeyLen(i);
     return (10 <= len and len <= 18);
   }
@@ -730,10 +718,12 @@ public:
     return key_suffixes;
   }
 
+  [[nodiscard]]
   inline const KeySuffix& getKeySuffixes() const{
     return key_suffixes;
   }
 
+  [[nodiscard]]
   inline Permutation getPermutation() const{
     return permutation.load(std::memory_order_acquire);
   }
@@ -786,14 +776,6 @@ private:
   std::atomic<BorderNode*> next{nullptr};
   std::atomic<BorderNode*> prev{nullptr};
   KeySuffix key_suffixes = {};
-
-  /**
-   * key_lenがunused slotであるかを表す。
-   * @return
-   */
-  static bool isKeyLenUnused(size_t key_len_){
-    return key_len_ == 0 or (10 <= key_len_ and key_len_ <= 18);
-  }
 };
 
 
