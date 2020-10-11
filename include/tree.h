@@ -152,6 +152,12 @@ public:
     setVersion(v);
   }
 
+  [[nodiscard]]
+  inline bool getInserting() const{
+    auto v = getVersion();
+    return v.inserting;
+  }
+
   inline void setInserting(bool inserting){
     auto v = getVersion();
     v.inserting = inserting;

@@ -28,12 +28,11 @@ forward:
     goto retry;
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
 #ifndef NDEBUG
-if(get_handler1.isUsed())
-  get_handler1.giveAndWaitBack();
+  get_handler1.giveAndWaitBackIfUsed();
 #endif
   if((n->getVersion() ^ v) > Version::has_locked){
 #ifndef NDEBUG
-    has_locked_marker.mark();
+    has_locked_marker.markIfUsed();
 #endif
     v = n->stableVersion(); auto next = n->getNext();
     while(!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){

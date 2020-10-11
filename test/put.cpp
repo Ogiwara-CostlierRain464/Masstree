@@ -50,7 +50,8 @@ TEST(PutTest, handle_break_invariant){
   borderNode->setPermutation(Permutation::fromSorted(2));
   auto j = new Value(5);
   Key k({EIGHT, ONE, TWO, CD}, 2);
-  handle_break_invariant(borderNode, k, j, 1);
+  GC gc{};
+  handle_break_invariant(borderNode, k, j, 1, gc);
 
   ASSERT_EQ(borderNode->getKeyLen(1), BorderNode::key_len_layer);
   ASSERT_EQ(borderNode->getKeySuffixes().get(1), nullptr);
@@ -72,6 +73,7 @@ TEST(PutTest, insert_into_border){
   auto border = new BorderNode;
   BorderNode next{};
   Value i(9);
+  GC gc{};
   border->setKeyLen(0, 2);
   border->setKeySlice(0, ONE);
   border->setLV(0, LinkOrValue(&i));
@@ -89,7 +91,7 @@ TEST(PutTest, insert_into_border){
 
   Key k({TWO, FIVE}, 8);
   border->lock();
-  insert_into_border(border, k, &i);
+  insert_into_border(border, k, &i, gc);
 
   EXPECT_EQ(border->getKeyLen(1), BorderNode::key_len_has_suffix);
   EXPECT_EQ(border->getKeySlice(1), THREE);
@@ -100,7 +102,7 @@ TEST(PutTest, insert_into_border){
   skipped_border(skip);
   Key k2({2}, 4);
   skip->lock();
-  insert_into_border(skip, k2, &i);
+  insert_into_border(skip, k2, &i, gc);
 
   EXPECT_EQ(skip->getKeyLen(2), 4);
   EXPECT_EQ(skip->getKeySlice(2), 2);

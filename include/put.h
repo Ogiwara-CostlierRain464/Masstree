@@ -3,6 +3,7 @@
 
 #include "tree.h"
 #include "alloc.h"
+#include "gc.h"
 #include <algorithm>
 
 namespace masstree{
@@ -66,7 +67,7 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
   return std::nullopt;
 }
 
-static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index);
+static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc);
 
 /**
  * invariantを違反した場合の処理。§4.6.3を参考。
@@ -75,7 +76,7 @@ static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size
  * @param value
  * @param old_index
  */
-static void handle_break_invariant(BorderNode *border, Key &key, Value *value, size_t old_index){
+static void handle_break_invariant(BorderNode *border, Key &key, Value *value, size_t old_index, GC &gc){
   if(border->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
@@ -123,11 +124,11 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
 
     border->unlock();
     key.next();
-    put(border->getLV(old_index).next_layer, key, value, border, old_index);
+    put(border->getLV(old_index).next_layer, key, value, border, old_index, gc);
   }else{
     assert(border->getKeyLen(old_index) == BorderNode::key_len_layer);
     key.next();
-    put(border->getLV(old_index).next_layer, key, value, border, old_index);
+    put(border->getLV(old_index).next_layer, key, value, border, old_index, gc);
   }
 }
 
@@ -139,8 +140,10 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
  * @param key
  * @param value
  */
-static void insert_into_border(BorderNode *border, const Key &key, Value *value){
+static void insert_into_border(BorderNode *border, const Key &key, Value *value, GC &gc){
   assert(border->getLocked());
+  assert(!border->getSplitting());
+  assert(!border->getInserting());
   auto p = border->getPermutation();
   assert(p.isNotFull());
 
@@ -148,44 +151,30 @@ static void insert_into_border(BorderNode *border, const Key &key, Value *value)
   size_t num_keys = p.getNumKeys();
   auto cursor = key.getCurrentSlice();
   while (insertion_point_ps < num_keys
-         && border->getKeySlice(p(insertion_point_ps)) < cursor.slice){ // NOTE: ここで、size見ないの？
+         && border->getKeySlice(p(insertion_point_ps)) < cursor.slice){
     ++insertion_point_ps;
   }
 
-  // ここで、permutation spaceにおいてはどこに挿入すれば良いかがわかった
-
-  // 同じKeyに対して上書きをした場合は
-  // また、同じkey sliceを持つ順番に関わらず、同じkey sliceで同じkey lenを持つ場合にはちゃんと上書き判定ができるようにする必要がある
-  // その上で、first unused slot index関数の使用は不適切であろう
-  // 違うkeyを上書きする以上は、insertingにする必要がなさそうだ
-  // つまり、別に必ずしも積極的に同じkeyに対してinsertする必要はない
-  // insert pointの実装では積極的に上書きをするようにしているが、そうではなく、
-  // 積極的に避ける事ができればinsertingのマークの必要性が減るのか？
-  // いや、しかしながら、それでは同じkeyが存在することになってしまう。
-  // やはり、かぶっているkeyがあったらそれを上書きしにいく、という方針でないとまずいだろう。
   auto pair = border->insertPoint();
   auto insertion_point_ts = pair.first;
   auto reuse = pair.second;
 
   if(reuse){
+    // key len = 0のslotと違い、ここには古いValueとSuffixが残る。
+    // これをどのタイミングでdeleteするのか、どのタイミングで参照を外すのか、また何で初期化するかが非常にキモになる。
+    // 下手に0で初期化しても、それは「全てが0のバイナリ列」と区別がつかないので、新しい値と古い値の間にそういった状態を発生させるべきではない。
+    // writer-writer conflictはlockで対処、readerはpermutationしか見ないので問題ないのでは？
     border->setInserting(true);
-    // updateの時と同じように、古い値はすぐには消さない方がいい
-    if(border->getKeySuffixes().get(insertion_point_ts) != nullptr){
-      border->getKeySuffixes().delete_ptr(insertion_point_ts);
+
+    auto suffix = border->getKeySuffixes().get(insertion_point_ts);
+    if(suffix != nullptr){
+      gc.add(suffix);
     }
-    delete border->getLV(insertion_point_ts).value;
-#ifndef NDEBUG
-    Alloc::decValue();
-#endif
+    gc.add(border->getLV(insertion_point_ts).value);
   }
 
-  //上書きしても良いのか？…
-  // TODO: handle value delete.
   // クリアしておく。ここでクリアしないと、Suffixを上書きし損ねる
-//  border->setKeyLen(insertion_point_ts, 0);
-//  border->setKeySlice(insertion_point_ts, 0);
   border->getKeySuffixes().set(insertion_point_ts, nullptr);
-//  border->setLV(insertion_point_ts, LinkOrValue{});
 
   if(1 <= cursor.size and cursor.size <= 7){
     border->setKeyLen(insertion_point_ts, cursor.size);
@@ -194,8 +183,6 @@ static void insert_into_border(BorderNode *border, const Key &key, Value *value)
   }else{
     assert(cursor.size == 8);
     if(key.hasNext()){
-      // invariantを満たさない場合の処理は完了したので、ここでは
-      // チェック不要
       border->setKeySlice(insertion_point_ts, cursor.slice);
       border->setKeyLen(insertion_point_ts, BorderNode::key_len_has_suffix);
       border->getKeySuffixes().set(insertion_point_ts, key, key.cursor + 1);
@@ -565,7 +552,7 @@ ascend:
  * @return
  */
 [[maybe_unused]]
-static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index){
+static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc){
   if(root == nullptr){
     // Layer0が空の時のみここに来る
     assert(upper_layer == nullptr);
@@ -591,11 +578,11 @@ forward:
     // insertをする
     auto check = check_break_invariant(n, k);
     if(check){
-      handle_break_invariant(n, k, value, check.value());
+      handle_break_invariant(n, k, value, check.value(), gc);
     }else{
       if(p.isNotFull()){
         n->lock();
-        insert_into_border(n, k, value);
+        insert_into_border(n, k, value, gc);
         n->unlock();
       }else{
         n->lock();
@@ -622,7 +609,7 @@ forward:
     n->setLV(index, LinkOrValue(value));
   }else if(t == LAYER){
     k.next();
-    put(lv.next_layer, k, value, n, index);
+    put(lv.next_layer, k, value, n, index, gc);
   }else {
     assert(t == UNSTABLE);
     goto forward;
@@ -632,8 +619,8 @@ forward:
 }
 
 [[nodiscard]]
-static Node *put_at_layer0(Node *root, Key &k, Value *value){
-  return put(root, k, value, nullptr, 0);
+static Node *put_at_layer0(Node *root, Key &k, Value *value, GC &gc){
+  return put(root, k, value, nullptr, 0, gc);
 }
 
 

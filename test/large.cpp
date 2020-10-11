@@ -41,12 +41,13 @@ TEST(LargeTest, DISABLED_put_get){
   constexpr size_t COUNT = 100000;
 
   Node *root = nullptr;
+  GC gc{};
   std::array<Key *, COUNT> inserted_keys{};
 
   for(size_t i = 0; i < COUNT; ++i){
 
     auto k = make_key();
-    root = put_at_layer0(root, *k, new Value(k->lastSliceSize));
+    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
 
     k->reset();
     inserted_keys[i] = k;
@@ -60,7 +61,7 @@ TEST(LargeTest, DISABLED_put_get){
   }
 }
 
-TEST(LargeTest, put_get_remove){
+TEST(LargeTest, DISABLED_put_get_remove){
   auto seed = time(0);
   srand(seed);
 
@@ -72,7 +73,7 @@ TEST(LargeTest, put_get_remove){
   std::array<Key*, COUNT> inserted_keys{};
   for(size_t i = 0; i < COUNT; ++i){
     auto k = make_key();
-    root = put_at_layer0(root, *k, new Value(k->lastSliceSize));
+    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
 
     k->reset();
     inserted_keys[i] = k;
@@ -95,6 +96,7 @@ TEST(LargeTest, put_get_remove){
 
   Alloc::print();
   Alloc::reset();
+  printf("Seed was %ld\n", seed);
 }
 
 TEST(LargeTest, DISABLED_random_op){
@@ -113,7 +115,7 @@ TEST(LargeTest, DISABLED_random_op){
         get(root, *k);
       }
       case 1: {
-        root = put_at_layer0(root, *k, new Value(k->lastSliceSize));
+        root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
       }
       default: {
         root = remove_at_layer0(root, *k, gc);

@@ -26,6 +26,16 @@ public:
     interiors.push_back(i);
   }
 
+  void add(Value* v){
+    assert(!contain(v));
+    values.push_back(v);
+  }
+
+  void add(BigSuffix* suffix){
+    assert(!contain(suffix));
+    suffixes.push_back(suffix);
+  }
+
   bool contain(BorderNode const *n) const{
     return std::find(borders.begin(), borders.end(), n) != borders.end();
   }
@@ -34,11 +44,19 @@ public:
     return std::find(interiors.begin(), interiors.end(), n) != interiors.end();
   }
 
+  bool contain(Value const *n) const{
+    return std::find(values.begin(), values.end(), n) != values.end();
+  }
 
-  void run(){
+  bool contain(BigSuffix const *suffix) const{
+    return std::find(suffixes.begin(), suffixes.end(), suffix) != suffixes.end();
+  }
+
+
+  void run() noexcept{
     for(auto &b: borders){
       // destructorでvalueとsuffixも解放される
-      // TODO: BorderNodeの削除と同時にその子要素を削除するのは不適切であろう。
+      // TODO: BorderNodeの削除と同時にデストラクタでその子要素を削除するのは不適切であろうか？
       delete b;
 #ifndef NDEBUG
       Alloc::decBorder();
@@ -53,11 +71,29 @@ public:
 #endif
     }
     interiors.clear();
+
+    for(auto &v: values){
+      delete v;
+#ifndef NDEBUG
+      Alloc::decValue();
+#endif
+    }
+    values.clear();
+
+    for(auto &s: suffixes){
+      delete s;
+#ifndef NDEBUG
+      Alloc::decSuffix();
+#endif
+    }
+    suffixes.clear();
   }
 
 private:
   std::vector<BorderNode*> borders{};
   std::vector<InteriorNode*> interiors{};
+  std::vector<Value*> values{};
+  std::vector<BigSuffix*> suffixes{};
 };
 
 using GC = GarbageCollector;

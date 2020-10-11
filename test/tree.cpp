@@ -108,8 +108,9 @@ TEST(TreeTest, get3){
 TEST(TreeTest, get4){
   auto root = sample4();
   Key key({ 0x0101 }, 2);
+  GC gc{};
 
-  root = put(root, key, new Value(23), nullptr, 0);
+  root = put(root, key, new Value(23), nullptr, 0, gc);
   auto p = get(root, key);
 
   assert(p != nullptr);
@@ -137,8 +138,9 @@ TEST(TreeTest, insert){
   Key key2({
     0x1112131415161718
   }, 8);
-  auto root = put(nullptr, key1, new Value(1), nullptr, 0);
-  root = put(root, key2, new Value(2), nullptr, 0);
+  GC gc{};
+  auto root = put(nullptr, key1, new Value(1), nullptr, 0, gc);
+  root = put(root, key2, new Value(2), nullptr, 0, gc);
   auto p = get(root, key1);
   assert(p != nullptr);
   EXPECT_EQ(*p, 1);
@@ -154,14 +156,14 @@ InteriorNode *to_i(Node *n){
 
 TEST(TreeTest, split){
   // work at B+ tree test.
-
+  GC gc{};
   Node *root = nullptr;
   for(uint64_t i = 1; i <= 10000; ++i){
     Key k({i}, 1);
-    root = put(root, k, new Value(i), nullptr, 0);
+    root = put(root, k, new Value(i), nullptr, 0, gc);
   }
 
-  print_sub_tree(root);
+//  print_sub_tree(root);
 
   Key k2341({2341},1);
   auto l = findBorder(root, k2341);
@@ -172,9 +174,10 @@ TEST(TreeTest, split){
 
 TEST(TreeTest, break_invariant){
   auto root = sample2();
+  GC gc{};
   Key k({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 2);
   // kがここで変わってしまう。
-  put(root, k, new Value(3), nullptr, 0);
+  put(root, k, new Value(3), nullptr, 0, gc);
 
 
   Key k2({0x0001'0203'0405'0607, 0x0C0D'0000'0000'0000}, 2);
@@ -185,6 +188,7 @@ TEST(TreeTest, break_invariant){
 
 TEST(TreeTest, break_invariant2){
   Node *root = nullptr;
+  GC gc{};
   Key k({
     0x8888'8888'8888'8888,
     0x1111'1111'1111'1111,
@@ -192,14 +196,14 @@ TEST(TreeTest, break_invariant2){
     0x3333'3333'3333'3333,
     0x0A0B'0000'0000'0000
   },2);
-  root = put(root, k, new Value(1), nullptr, 0);
+  root = put(root, k, new Value(1), nullptr, 0, gc);
   Key k1({
     0x8888'8888'8888'8888,
     0x1111'1111'1111'1111,
     0x2222'2222'2222'2222,
     0x0C0D'0000'0000'0000
   },2);
-  root = put(root, k1, new Value(2), nullptr, 0);
+  root = put(root, k1, new Value(2), nullptr, 0, gc);
   // Key is mutable, but you can reset cursor.
   k1.cursor = 0;
   auto p = get(root, k1);
@@ -210,8 +214,9 @@ TEST(TreeTest, break_invariant2){
 
 TEST(TreeTest, break_invariant3){
   auto pair = not_conflict_89();
-  auto root = put(nullptr, pair.first, new Value(1), nullptr, 0);
-  root = put(root, pair.second, new Value(7), nullptr, 0);
+  GC gc{};
+  auto root = put(nullptr, pair.first, new Value(1), nullptr, 0, gc);
+  root = put(root, pair.second, new Value(7), nullptr, 0, gc);
   pair.second.cursor = 0;
   auto p = get(root, pair.second);
   EXPECT_EQ(*p, 7);
@@ -229,15 +234,16 @@ TEST(TreeTest, p){
   Key k8({slice}, 8);
   Key k9({slice, CD}, 2);
 
-  auto root = put(nullptr, k1, new Value(1), nullptr, 0);
-  root = put(root, k2, new Value(2), nullptr, 0);
-  root = put(root, k3, new Value(3), nullptr, 0);
-  root = put(root, k4, new Value(4), nullptr, 0);
-  root = put(root, k5, new Value(5), nullptr, 0);
-  root = put(root, k6, new Value(6), nullptr, 0);
-  root = put(root, k7, new Value(7), nullptr, 0);
-  root = put(root, k9, new Value(9), nullptr, 0);
-  root = put(root, k8, new Value(8), nullptr, 0);
+  GC gc{};
+  auto root = put(nullptr, k1, new Value(1), nullptr, 0, gc);
+  root = put(root, k2, new Value(2), nullptr, 0, gc);
+  root = put(root, k3, new Value(3), nullptr, 0, gc);
+  root = put(root, k4, new Value(4), nullptr, 0, gc);
+  root = put(root, k5, new Value(5), nullptr, 0, gc);
+  root = put(root, k6, new Value(6), nullptr, 0, gc);
+  root = put(root, k7, new Value(7), nullptr, 0, gc);
+  root = put(root, k9, new Value(9), nullptr, 0, gc);
+  root = put(root, k8, new Value(8), nullptr, 0, gc);
 
   k8.cursor = 0;
   auto p = get(root, k8);
@@ -261,9 +267,10 @@ TEST(TreeTest, duplex){
   },2);
 
   Node *root = nullptr;
-  root = put(root, k, new Value(4), nullptr, 0);
-  root = put(root, k1, new Value(8), nullptr, 0);
-  root = put(root, k2, new Value(6), nullptr, 0);
+  GC gc{};
+  root = put(root, k, new Value(4), nullptr, 0, gc);
+  root = put(root, k1, new Value(8), nullptr, 0, gc);
+  root = put(root, k2, new Value(6), nullptr, 0, gc);
   k.cursor = 0;
   auto p = get(root, k);
   EXPECT_EQ(*p, 6);
@@ -275,11 +282,11 @@ TEST(TreeTest, layer_change){
   Key k1({
     ONE, TWO, FIVE
   }, 8);
-  root = put_at_layer0(root, k1, new Value(5));
+  root = put_at_layer0(root, k1, new Value(5), gc);
   Key k2({
     ONE, TWO, THREE, FOUR
   }, 8);
-  root = put_at_layer0(root, k2, new Value(4));
+  root = put_at_layer0(root, k2, new Value(4), gc);
 
   k1.reset();
   auto p = get(root, k1);
