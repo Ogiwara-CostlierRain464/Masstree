@@ -15,6 +15,7 @@ static SequentialHandler get_handler1{};
 static Marker has_locked_marker{};
 #endif
 
+[[maybe_unused]]
 static Value *get(Node *root, Key &k){
   if(root == nullptr){
     // Layer0が空の時にのみ、ここにくる

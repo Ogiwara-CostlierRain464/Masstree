@@ -6,6 +6,8 @@
 #include "../include/remove.h"
 #include "../include/alloc.h"
 #include "helper.h"
+#include <xmmintrin.h>
+#include <thread>
 
 using namespace masstree;
 
@@ -128,4 +130,40 @@ TEST(LargeTest, DISABLED_random_op){
 
   Alloc::print();
   Alloc::reset();
+}
+
+TEST(LargeTest, multi_insert_border_test){
+  auto seed = 1602407569;
+  srand(seed);
+
+  for(size_t i = 0; i < 1000000; ++i){
+
+    std::atomic<Node*> root = nullptr;
+    std::atomic_bool ready{false};
+
+    auto w1 = [&root, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 15; ++i){
+        auto k = make_key();
+        root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc);
+      }
+    };
+
+    auto w2 = [&root, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      for(size_t i = 0; i < 15; ++i){
+        auto k = make_key();
+        get(root, *k);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready = true;
+    a.join();
+    b.join();
+  }
 }
