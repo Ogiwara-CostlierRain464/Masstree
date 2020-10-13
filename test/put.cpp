@@ -56,17 +56,9 @@ TEST(PutTest, handle_break_invariant){
   ASSERT_EQ(borderNode->getKeyLen(1), BorderNode::key_len_layer);
   ASSERT_EQ(borderNode->getKeySuffixes().get(1), nullptr);
   auto next = reinterpret_cast<BorderNode *>(borderNode->getLV(1).next_layer);
-  ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_layer);
-  ASSERT_EQ(next->getKeySlice(0), ONE);
-  next = reinterpret_cast<BorderNode *>(next->getLV(0).next_layer);
-  ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_layer);
-  ASSERT_EQ(next->getKeySlice(0), TWO);
-  next = reinterpret_cast<BorderNode *>(next->getLV(0).next_layer);
   ASSERT_EQ(next->getKeyLen(0), BorderNode::key_len_has_suffix);
-  ASSERT_EQ(next->getKeySlice(0), THREE);
-  ASSERT_EQ(next->getKeySuffixes().get(0)->getCurrentSlice().slice, AB);
-  ASSERT_EQ(next->getKeyLen(1), 2);
-  ASSERT_EQ(next->getKeySlice(1), CD);
+  ASSERT_EQ(next->getKeySlice(0), ONE);
+  ASSERT_EQ(next->getKeySuffixes().get(0)->getCurrentSlice().slice, TWO);
 }
 
 TEST(PutTest, insert_into_border){
