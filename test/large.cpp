@@ -142,7 +142,7 @@ TEST(LargeTest, multi_insert_border_layer0_test){
   auto seed = time(0);
   srand(seed);
 
-  for(size_t i = 0; i < 1000000; ++i){
+  for(size_t i = 0; i < 10000; ++i){
 
     std::atomic<Node*> root = nullptr;
     std::atomic_bool ready{false};

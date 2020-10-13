@@ -4,55 +4,50 @@
 
 using namespace masstree;
 
-Key *make_key(){
-  std::vector<KeySlice> vec{};
-  size_t slices_len = 1;
-  for(size_t i = 1; i <= slices_len; ++i){
-    auto slice = rand() % 10;
-    vec.push_back(slice);
-  }
-  auto lastSize = (rand() % 8) + 1;
-  return new Key(vec, lastSize);
+Key *make_1layer_key(){
+  KeySlice slice = rand() % 3;
+  auto size = (rand() % 8) + 1;
+  return new Key({slice}, size);
 }
 
+
 int main(){
-  GC gc{};
+  auto seed = time(0);
+  srand(seed);
 
-  for(;;){
-    auto seed = time(0);
-    srand(seed);
+  for(size_t i = 0; i < 100000; ++i){
 
-    constexpr size_t COUNT = 100000;
+    std::atomic<Node*> root = nullptr;
+    std::atomic_bool ready{false};
 
-    Node *root = nullptr;
-    std::array<Key*, COUNT> inserted_keys{};
-    for(size_t i = 0; i < COUNT; ++i){
-      auto k = make_key();
-      root = put_at_layer0(root, *k, new Value(k->remainLength(0)));
+    auto w1 = [&root, &ready](){
+      while (!ready){ _mm_pause(); }
 
-      k->reset();
-      inserted_keys[i] = k;
-    }
-
-    for(int i = COUNT - 1; i >= 0; --i){
-      auto k = inserted_keys[i];
-      auto p = get(root, *k);
-//      assert(*reinterpret_cast<int *>(p) == k->length);
-      if(*p != k->remainLength(0)){
-        exit(-1);
+      GC gc{};
+      for(size_t i = 0; i < 15; ++i){
+        auto k = make_1layer_key();
+        root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc);
       }
+    };
 
-      k->reset();
-    }
+    auto w2 = [&root, &ready](){
+      while (!ready){ _mm_pause(); }
 
-    for(size_t i = 0; i < COUNT; ++i){
-      auto k = inserted_keys[i];
-      root = remove_at_layer0(root, *k, gc);
-      delete k;
-    }
+      for(size_t i = 0; i < 15; ++i){
+        auto k = make_1layer_key();
+        auto p = get(root, *k);
+        if(p != nullptr){
+          auto body = p->getBody();
+          assert(1 <= body and body <= 8);
+        }
+      }
+    };
 
-    Alloc::print();
-    Alloc::reset();
+    std::thread a(w1);
+    std::thread b(w2);
+    ready = true;
+    a.join();
+    b.join();
   }
 
   return 0;

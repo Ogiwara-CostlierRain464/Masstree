@@ -321,12 +321,9 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
         return table[i].second;
       }
     }
-  }else{
-    assert(new_slice > max_slice);
-    return 15;
-  }
-  // should not reach here.
-  assert(false);
+  } // else
+  assert(new_slice > max_slice);
+  return 15;
 }
 
 /**
