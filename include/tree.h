@@ -671,6 +671,7 @@ public:
    * @param i
    * @return
    */
+  [[nodiscard]]
   bool isKeyRemoved(uint8_t i) const{
     auto len = getKeyLen(i);
     return (10 <= len and len <= 18);

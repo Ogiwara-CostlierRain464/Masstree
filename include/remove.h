@@ -82,6 +82,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     return std::make_pair(LayerDeleted, nullptr);
   }
 
+  // TODO: parentのlock
+
   auto p = n->getParent();
   auto n_index = p->findChildIndex(n);
 
@@ -227,6 +229,13 @@ forward:
      */
     n->lock();
     // この時点で、もうすでに他のremoveによって消されている可能性がある。
+    // それは、単に他の要素も残っている状態で消されたのかもしれないし、
+    // あるいはすでにPermutationのn_keysが0でdeletedとなっているかもしれない。
+    // しかしながら、どのケースにおいても削除されたことを確認するだけで良い。
+    if(n->isKeyRemoved(index)){
+      return std::make_pair(NotChange, root);
+    }
+
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
@@ -243,9 +252,7 @@ forward:
 
     if(current_num_keys == 0){
       auto pair = delete_border_node_in_remove(n, upper_layer, upper_index, gc);
-      // とりあえず、nのlockだけここで外しておく
       n->unlock();
-      assert(n->isUnlocked());
       if(pair.first != NotChange){
         return pair;
       }
