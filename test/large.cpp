@@ -264,6 +264,58 @@ TEST(LargeTest, multi_put_put_layer0_test){
   }
 }
 
+TEST(LargeTest, multi_put_remove_remove_layer0_test){
+  auto seed = time(nullptr);
+  srand(seed);
+
+  for(size_t i = 0; i < 10000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC _{};
+    tree.put(k0, new Value(0), _);
+    std::atomic_bool ready{false};
+
+    auto w1 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 14; ++i){
+        auto k = make_1layer_key();
+        tree.put(*k, new Value(i), gc);
+      }
+    };
+
+    auto w2 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 7; ++i){
+        auto k = make_1layer_key();
+        tree.remove(*k, gc);
+      }
+    };
+
+    auto w3 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 7; ++i){
+        auto k = make_1layer_key();
+        tree.remove(*k, gc);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    std::thread c(w3);
+    ready = true;
+    a.join();
+    b.join();
+    c.join();
+  }
+}
+
 
 
 TEST(LargeTest, DISABLED_multi_insert_border_test){

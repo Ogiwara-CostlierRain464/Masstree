@@ -233,6 +233,7 @@ forward:
     // あるいはすでにPermutationのn_keysが0でdeletedとなっているかもしれない。
     // しかしながら、どのケースにおいても削除されたことを確認するだけで良い。
     if(n->isKeyRemoved(index)){
+      n->unlock();
       return std::make_pair(NotChange, root);
     }
 
