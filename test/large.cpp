@@ -6,6 +6,7 @@
 #include "../include/remove.h"
 #include "../include/alloc.h"
 #include "helper.h"
+#include "../include/masstree.h"
 #include <xmmintrin.h>
 #include <thread>
 
@@ -138,34 +139,35 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, multi_insert_border_layer0_test){
+TEST(LargeTest, DISABLED_multi_insert_border_layer0_test){
   auto seed = time(0);
   srand(seed);
 
   for(size_t i = 0; i < 14; ++i){
 
+    Masstree tree{};
     Key k0({0}, 1);
     GC _{};
-    std::atomic<Node*> root = put_at_layer0(nullptr, k0, new Value(0), _);
+    tree.put(k0, new Value(0), _);
     std::atomic_bool ready{false};
 
-    auto w1 = [&root, &ready](){
+    auto w1 = [&tree, &ready](){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
-        root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc);
+        tree.put(*k, new Value(i), gc);
       }
     };
 
-    auto w2 = [&root, &ready](){
+    auto w2 = [&tree, &ready](){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
-        root = remove_at_layer0(root, *k, gc);
+        tree.remove(*k, gc);
       }
     };
 

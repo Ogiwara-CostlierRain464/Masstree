@@ -68,6 +68,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
  * @return new root
  */
 static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
+  assert(n->getLocked());
   auto per = n->getPermutation();
   // すでに要素は削除済み
   assert(per.getNumKeys() == 0);
@@ -235,6 +236,9 @@ forward:
 
     if(current_num_keys == 0){
       auto pair = delete_border_node_in_remove(n, upper_layer, upper_index, gc);
+      // とりあえず、nのlockだけここで外しておく
+      n->unlock();
+      assert(n->isUnlocked());
       if(pair.first != NotChange){
         return pair;
       }

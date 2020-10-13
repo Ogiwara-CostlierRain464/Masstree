@@ -68,7 +68,7 @@ retry:
 
 
 private:
-  std::atomic<Node *> root;
+  std::atomic<Node *> root{nullptr};
 };
 }
 
