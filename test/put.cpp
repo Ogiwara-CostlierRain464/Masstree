@@ -295,7 +295,7 @@ TEST(PutTest, update_and_gc){
   Key k({1}, 1);
   GC gc{};
   auto v1 = new Value(1);
-  auto root = put_at_layer0(nullptr, k, v1, gc);
-  root = put_at_layer0(root, k, new Value(2), gc);
+  auto root = put_at_layer0(nullptr, k, v1, gc).second;
+  root = put_at_layer0(root, k, new Value(2), gc).second;
   EXPECT_TRUE(gc.contain(v1));
 }

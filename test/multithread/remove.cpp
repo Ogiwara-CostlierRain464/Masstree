@@ -18,8 +18,8 @@ TEST(MutiRemoveTest, get_and_remove_at_root_border_layer0){
     Key k0({0}, 1);
     Key k1({1}, 1);
     GC un_use{};
-    auto root = put_at_layer0(nullptr, k0, new Value(0), un_use);
-    root = put_at_layer0(root, k1, new Value(1), un_use);
+    auto root = put_at_layer0(nullptr, k0, new Value(0), un_use).second;
+    root = put_at_layer0(root, k1, new Value(1), un_use).second;
     auto w1 = [root, k1]()mutable{
       auto p = get(root, k1);
       EXPECT_EQ(p->getBody(), 1);
@@ -46,10 +46,10 @@ TEST(MutiRemoveTest, put_and_remove_at_root_border_layer0){
   Key k0({0} , 1);
   Key k1({1} , 1);
   GC _{};
-  std::atomic<Node*> root = put_at_layer0(nullptr, k0, new Value(0), _);
+  std::atomic<Node*> root = put_at_layer0(nullptr, k0, new Value(0), _).second;
   auto w1 = [&root, k1]()mutable{
     GC gc{};
-    root = put_at_layer0(root, k1, new Value(1), gc);
+    root = put_at_layer0(root, k1, new Value(1), gc).second;
   };
   auto w2 = [&root, k1]()mutable{
     GC gc{};

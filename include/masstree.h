@@ -18,7 +18,12 @@ public:
   void put(Key &key, Value *value, GC &gc){
 retry:
     auto old_root = root.load(std::memory_order_acquire);
-    auto new_root = ::masstree::put_at_layer0(old_root, key, value, gc); // ここでもretry
+    auto pair = ::masstree::put_at_layer0(old_root, key, value, gc); // ここでもretry
+    if(pair.first == Retry){
+      goto retry;
+    }
+    auto new_root = pair.second;
+
     key.reset();
     // treeが空だった場合
     // 他のputと、新しいtree生成の競争が発生する

@@ -8,6 +8,11 @@
 
 namespace masstree{
 
+enum PutResult : uint8_t{
+  Done,
+  Retry
+};
+
 /**
  * Masstreeが空の状態の時、新しいMasstreeを作る。
  * @param key
@@ -66,8 +71,6 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
   }
   return std::nullopt;
 }
-
-static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc);
 
 /**
  * invariantを違反した場合の処理。§4.6.3を参考。
@@ -545,11 +548,11 @@ ascend:
  * @return
  */
 [[maybe_unused]]
-static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc){
+static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc){
   if(root == nullptr){
     // Layer0が空の時のみここに来る
     assert(upper_layer == nullptr);
-    return start_new_tree(k, value);
+    return std::make_pair(Done,start_new_tree(k, value));
   }
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
@@ -563,6 +566,7 @@ forward:
       // 一つ上のLayerのrootからやり直すか？しかしながら、
       // 他のremoveによって大幅にlayerの構成が変わっていてもおかしくはない
       // 最も簡単なのは、treeのrootから処理をやり直すことである。
+      return std::make_pair(Retry, nullptr);
     }else{
       goto retry;
     }
@@ -584,7 +588,10 @@ forward:
       auto old_index = check.value();
       handle_break_invariant(n, k, value, old_index, gc);
       k.next();
-      put(n->getLV(old_index).next_layer, k, value, n, old_index, gc);
+      auto pair = put(n->getLV(old_index).next_layer, k, value, n, old_index, gc);
+      if(pair.first == Retry){
+        return std::make_pair(Retry, nullptr);
+      }
     }else{
       if(p.isNotFull()){
         n->lock();
@@ -601,7 +608,7 @@ forward:
             upper_layer->setLV(upper_index, LinkOrValue(may_new_root));
           }
 
-          return may_new_root;
+          return std::make_pair(Done, may_new_root);
         }
       }
     }
@@ -611,17 +618,20 @@ forward:
     n->setLV(index, LinkOrValue(value));
   }else if(t == LAYER){
     k.next();
-    put(lv.next_layer, k, value, n, index, gc);
+    auto pair = put(lv.next_layer, k, value, n, index, gc);
+    if(pair.first == Retry){
+      return std::make_pair(Retry, nullptr);
+    }
   }else {
     assert(t == UNSTABLE);
     goto forward;
   }
 
-  return root;
+  return std::make_pair(Done, root);
 }
 
 [[nodiscard]]
-static Node *put_at_layer0(Node *root, Key &k, Value *value, GC &gc){
+static std::pair<PutResult, Node*>put_at_layer0(Node *root, Key &k, Value *value, GC &gc){
   return put(root, k, value, nullptr, 0, gc);
 }
 

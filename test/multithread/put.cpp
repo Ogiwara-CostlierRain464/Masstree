@@ -19,13 +19,13 @@ TEST(MultiPutTest, update1){
   GC gc{};
   Node* root = nullptr;
   Key k({1}, 1);
-  root = put_at_layer0(root, k, new Value(1), gc);
+  root = put_at_layer0(root, k, new Value(1), gc).second;
 
   constexpr size_t COUNT = 100;
   auto w1 = [&root, &k](){
     GC gc{};
     for(size_t i = 0; i < COUNT; ++i){
-      root = put_at_layer0(root, k, new Value(i), gc);
+      root = put_at_layer0(root, k, new Value(i), gc).second;
     }
   };
 
@@ -50,7 +50,7 @@ TEST(MultiPutTest, border_inserts1){
   for(size_t i = 0; i < 1000; ++i) {
     GC gc{};
     Key k({0}, 1);
-    auto root = put_at_layer0(nullptr, k, new Value(0), gc);
+    auto root = put_at_layer0(nullptr, k, new Value(0), gc).second;
 
     std::atomic_bool ready{false};
     auto w1 = [&ready, &root](){
@@ -59,7 +59,7 @@ TEST(MultiPutTest, border_inserts1){
       GC gc{};
       for(size_t i = 0; i < 15; ++i){
         Key k({i}, 1);
-        root = put_at_layer0(root, k, new Value(i), gc);
+        root = put_at_layer0(root, k, new Value(i), gc).second;
       }
     };
 
@@ -91,9 +91,9 @@ TEST(MultiPutTest, border_inserts2){
       GC gc{};
       Key k0({0}, 1);
       Key k1({1}, 1);
-      auto root = put_at_layer0(nullptr, k0, new Value(-1), gc);
+      auto root = put_at_layer0(nullptr, k0, new Value(-1), gc).second;
       auto v1 = new Value(1);
-      root = put_at_layer0(root, k1, v1, gc);
+      root = put_at_layer0(root, k1, v1, gc).second;
 
       auto w1 = [&root, &k1](){
         auto p = get(root, k1);
@@ -106,7 +106,7 @@ TEST(MultiPutTest, border_inserts2){
         GC gc{};
         Key k2({2}, 2);
         root = remove_at_layer0(root, k1, gc);
-        root = put_at_layer0(root, k2, new Value(2), gc);
+        root = put_at_layer0(root, k2, new Value(2), gc).second;
         get_handler1.back();
         EXPECT_TRUE(gc.contain(v1));
       };
@@ -127,7 +127,7 @@ TEST(MultiPutTest, border_inserts3){
     has_locked_marker.use([](){
       Key k1({1}, 1);
       GC gc{};
-      auto root = put_at_layer0(nullptr, k1, new Value(1), gc);
+      auto root = put_at_layer0(nullptr, k1, new Value(1), gc).second;
       auto w1 = [&root, &k1](){
         auto p = get(root, k1);
         EXPECT_TRUE(has_locked_marker.isMarked());
@@ -139,7 +139,7 @@ TEST(MultiPutTest, border_inserts3){
         GC gc{};
         Key k2({2}, 2);
         root = remove_at_layer0(root, k1, gc);
-        root = put_at_layer0(root, k2, new Value(2), gc);
+        root = put_at_layer0(root, k2, new Value(2), gc).second;
         get_handler1.back();
       };
 

@@ -56,7 +56,7 @@ TEST(LargeTest, DISABLED_put_get){
   for(size_t i = 0; i < COUNT; ++i){
 
     auto k = make_key();
-    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
+    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc).second;
 
     k->reset();
     inserted_keys[i] = k;
@@ -71,7 +71,7 @@ TEST(LargeTest, DISABLED_put_get){
 }
 
 TEST(LargeTest, DISABLED_put_get_remove){
-  auto seed = time(0);
+  auto seed = time(nullptr);
   srand(seed);
 
   constexpr size_t COUNT = 100000;
@@ -82,7 +82,7 @@ TEST(LargeTest, DISABLED_put_get_remove){
   std::array<Key*, COUNT> inserted_keys{};
   for(size_t i = 0; i < COUNT; ++i){
     auto k = make_key();
-    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
+    root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc).second;
 
     k->reset();
     inserted_keys[i] = k;
@@ -124,7 +124,7 @@ TEST(LargeTest, DISABLED_random_op){
         get(root, *k);
       }
       case 1: {
-        root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc);
+        root = put_at_layer0(root, *k, new Value(k->lastSliceSize), gc).second;
       }
       default: {
         root = remove_at_layer0(root, *k, gc);
@@ -194,7 +194,7 @@ TEST(LargeTest, DISABLED_multi_insert_border_test){
       GC gc{};
       for(size_t i = 0; i < 15; ++i){
         auto k = make_key();
-        root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc);
+        root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc).second;
       }
     };
 
