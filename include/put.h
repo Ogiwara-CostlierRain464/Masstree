@@ -76,8 +76,8 @@ static Node *put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size
  * @param value
  * @param old_index
  */
-static void handle_break_invariant(BorderNode *border, Key &key, Value *value, size_t old_index, GC &gc){
-  if(border->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
+static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t old_index, GC &gc){
+  if(n->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
     * Masstree creates a new layer when inserting a key k1 into
@@ -91,14 +91,14 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
     *
     * @see §4.6.3
     */
-    border->lock();
+    n->lock();
     auto n1 = new BorderNode{};
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
     n1->setIsRoot(true);
-    auto k2_val = border->getLV(old_index).value;
-    auto k2_suffix_copy = new BigSuffix(*border->getKeySuffixes().get(old_index));
+    auto k2_val = n->getLV(old_index).value;
+    auto k2_suffix_copy = new BigSuffix(*n->getKeySuffixes().get(old_index));
 #ifndef NDEBUG
     Alloc::incSuffix();
 #endif
@@ -118,17 +118,13 @@ static void handle_break_invariant(BorderNode *border, Key &key, Value *value, s
 #endif
     }
 
-    border->setKeyLen(old_index, BorderNode::key_len_layer);
-    border->getKeySuffixes().delete_ptr(old_index);
-    border->setLV(old_index, LinkOrValue(n1));
+    n->setKeyLen(old_index, BorderNode::key_len_layer);
+    n->getKeySuffixes().delete_ptr(old_index);
+    n->setLV(old_index, LinkOrValue(n1));
 
-    border->unlock();
-    key.next();
-    put(border->getLV(old_index).next_layer, key, value, border, old_index, gc);
+    n->unlock();
   }else{
-    assert(border->getKeyLen(old_index) == BorderNode::key_len_layer);
-    key.next();
-    put(border->getLV(old_index).next_layer, key, value, border, old_index, gc);
+    assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);
   }
 }
 
@@ -585,7 +581,10 @@ forward:
     // insertをする
     auto check = check_break_invariant(n, k);
     if(check){
-      handle_break_invariant(n, k, value, check.value(), gc);
+      auto old_index = check.value();
+      handle_break_invariant(n, k, value, old_index, gc);
+      k.next();
+      put(n->getLV(old_index).next_layer, k, value, n, old_index, gc);
     }else{
       if(p.isNotFull()){
         n->lock();
