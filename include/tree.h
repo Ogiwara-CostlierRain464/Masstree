@@ -51,6 +51,7 @@ public:
     for(;;){
       auto expected = getVersion();
       auto desired = expected;
+      expected.locked = false;
       desired.locked = true;
       if(version.compare_exchange_weak(expected, desired)){
         break;

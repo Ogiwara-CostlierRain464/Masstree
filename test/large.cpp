@@ -138,7 +138,7 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, multi_insert_border_layer0_test){
+TEST(LargeTest, DISABLED_multi_insert_border_layer0_test){
   auto seed = time(0);
   srand(seed);
 

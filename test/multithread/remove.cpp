@@ -13,7 +13,7 @@ class MultiRemoveTest: public ::testing::Test{};
  * getとremoveが同時に走る場合
  * Masstreeのポリシーは高々no lost keyなので、並行で削除されたKeyのvalueを返しても良い
  */
-TEST(MutiRemoveTest, get_and_remove){
+TEST(MutiRemoveTest, get_and_remove_at_root_border_layer0){
   get_handler1.use([](){
     Key k0({0}, 1);
     Key k1({1}, 1);
@@ -36,4 +36,8 @@ TEST(MutiRemoveTest, get_and_remove){
     a.join();
     b.join();
   });
+}
+
+TEST(MutiRemoveTest, put_and_remove_at_root_border_layer0){
+
 }
