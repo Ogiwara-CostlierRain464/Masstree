@@ -138,20 +138,22 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, DISABLED_multi_insert_border_layer0_test){
+TEST(LargeTest, multi_insert_border_layer0_test){
   auto seed = time(0);
   srand(seed);
 
-  for(size_t i = 0; i < 10000; ++i){
+  for(size_t i = 0; i < 14; ++i){
 
-    std::atomic<Node*> root = nullptr;
+    Key k0({0}, 1);
+    GC _{};
+    std::atomic<Node*> root = put_at_layer0(nullptr, k0, new Value(0), _);
     std::atomic_bool ready{false};
 
     auto w1 = [&root, &ready](){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
-      for(size_t i = 0; i < 15; ++i){
+      for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
         root = put_at_layer0(root, *k, new Value(k->remainLength(0)), gc);
       }
@@ -160,13 +162,10 @@ TEST(LargeTest, DISABLED_multi_insert_border_layer0_test){
     auto w2 = [&root, &ready](){
       while (!ready){ _mm_pause(); }
 
-      for(size_t i = 0; i < 15; ++i){
+      GC gc{};
+      for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
-        auto p = get(root, *k);
-        if(p != nullptr){
-          auto body = p->getBody();
-          ASSERT_TRUE(1 <= body and body <= 8);
-        }
+        root = remove_at_layer0(root, *k, gc);
       }
     };
 

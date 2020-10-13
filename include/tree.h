@@ -67,6 +67,7 @@ public:
 
   void unlock(){
     auto copy_v = getVersion();
+    assert(copy_v.locked);
     if(copy_v.inserting){
       ++copy_v.v_insert;
     }else if(copy_v.splitting){
@@ -810,7 +811,7 @@ retry:
   if(!v.is_root){
     root = root->getParent(); goto retry;
   }
-  descend:
+descend:
   if(n->getIsBorder()){
     return std::pair(reinterpret_cast<BorderNode *>(n), v);
   }

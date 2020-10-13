@@ -150,3 +150,10 @@ TEST(MultiPutTest, border_inserts3){
     });
   });
 }
+
+/**
+ * putによってnew layerが作られるケース
+ */
+TEST(MultiPutTest, new_layers){
+
+}
