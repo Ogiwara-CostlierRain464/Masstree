@@ -18,17 +18,20 @@ public:
   void put(Key &key, Value *value, GC &gc){
 retry:
     auto old_root = root.load(std::memory_order_acquire);
-    auto new_root = ::masstree::put_at_layer0(old_root, key, value, gc);
+    auto new_root = ::masstree::put_at_layer0(old_root, key, value, gc); // ここでもretry
     key.reset();
     // treeが空だった場合
+    // 他のputと、新しいtree生成の競争が発生する
     if(old_root == nullptr){
-      auto not_overlapped = root.compare_exchange_weak(old_root, new_root);
-      if(not_overlapped){
+      auto cas_success = root.compare_exchange_weak(old_root, new_root);
+      if(cas_success){
         return;
       }else{
-        // treeが他によって更新された場合は作った木を消して、もう一度処理をやり直す
+        // treeが他によって更新された場合はせっかく作った木を消して、もう一度処理をやり直す
         // old_rootがnullだった場合は、new_rootは必ずBorderNodeとなる
+        assert(new_root != nullptr);
         assert(new_root->getIsBorder());
+        new_root->setDeleted(true);
         gc.add(reinterpret_cast<BorderNode*>(new_root));
         goto retry;
       }
@@ -36,32 +39,28 @@ retry:
 
     // treeの変更以外は、論文中のアルゴリズムでrootの変更を検知できるので、やり直しの必要はない
     if(old_root != new_root){
-      root.store(new_root, std::memory_order_release);
+      auto cas_success = root.compare_exchange_weak(old_root, new_root);
+      assert(cas_success);
     }
   }
 
   void remove(Key &key, GC &gc){
 retry:
     auto old_root = root.load(std::memory_order_acquire);
+    if(old_root == nullptr){
+      return;
+    }
+    // new_treeはnullptrとなる場合もあるので注意
     auto new_root = ::masstree::remove_at_layer0(old_root, key, gc);
     key.reset();
-    // treeが空だった場合
-    if(old_root == nullptr){
-      auto not_overlapped = root.compare_exchange_weak(old_root, new_root);
-      if(not_overlapped){
+    if(old_root != new_root){
+      auto cas_success = root.compare_exchange_weak(old_root, new_root);
+      if(cas_success){
         return;
-      }else{
-        // treeが他によって更新された場合は作った木を消して、もう一度処理をやり直す
-        // old_rootがnullだった場合は、new_rootは必ずBorderNodeとなる
-        assert(new_root->getIsBorder());
-        gc.add(reinterpret_cast<BorderNode*>(new_root));
+      }else {
+        // new_rootがnullではないのなら、それはrootでないNodeを指すことになる
         goto retry;
       }
-    }
-
-    // treeの変更以外は、論文中のアルゴリズムでrootの変更を検知できるので、やり直しの必要はない
-    if(old_root != new_root){
-      root.store(new_root, std::memory_order_release);
     }
   }
 

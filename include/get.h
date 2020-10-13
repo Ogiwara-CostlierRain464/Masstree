@@ -26,8 +26,10 @@ retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
 forward:
   if(v.deleted){
-    // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
     if(v.is_root){
+      // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
+      // 他のremoveによってここに到達するが、それは今まさに探そうとしているKeyに対してremoveされたからなので、
+      // ここではnullptrを返す。
       return nullptr;
     }else{
       goto retry;

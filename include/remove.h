@@ -174,8 +174,14 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
 forward:
-  if(v.deleted)
-    goto retry;
+  if(v.deleted){
+    if(v.is_root){
+      // 他のremoveが代わりに消したことになる
+      return std::make_pair(NotChange, root);
+    }else{
+      goto retry;
+    }
+  }
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);

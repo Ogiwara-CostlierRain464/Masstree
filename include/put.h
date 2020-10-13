@@ -560,10 +560,13 @@ retry:
   auto p = n->getPermutation();
 forward:
   if(v.deleted){
-    // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
     if(v.is_root){
-      // しかしそんな事が許されるのか？
-      assert(false);
+      // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
+      // getの時と同じように、putは途中まではただのreaderなのでこのような状況は
+      // 発生しうる。
+      // 一つ上のLayerのrootからやり直すか？しかしながら、
+      // 他のremoveによって大幅にlayerの構成が変わっていてもおかしくはない
+      // 最も簡単なのは、treeのrootから処理をやり直すことである。
     }else{
       goto retry;
     }
