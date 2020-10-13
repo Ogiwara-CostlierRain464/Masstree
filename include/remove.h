@@ -218,6 +218,7 @@ forward:
      * NOTE: どのケースにおいても、先に親としてのinteriorに先に
      * ロックをかける必要がありそうだ
      */
+    n->lock();
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
@@ -237,6 +238,8 @@ forward:
       if(pair.first != NotChange){
         return pair;
       }
+    }else{
+      n->unlock();
     }
   }else if(t == LAYER){
     k.next();
