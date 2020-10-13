@@ -157,7 +157,7 @@ TEST(LargeTest, multi_insert_border_layer0_test){
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
-        tree.put(*k, new Value(i), gc);
+        tree.remove(*k, gc);
       }
     };
 

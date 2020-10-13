@@ -226,6 +226,7 @@ forward:
      * ロックをかける必要がありそうだ
      */
     n->lock();
+    // この時点で、もうすでに他のremoveによって消されている可能性がある。
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
