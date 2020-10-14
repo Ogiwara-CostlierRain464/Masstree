@@ -3,7 +3,7 @@
 namespace masstree{
 
 #ifndef NDEBUG
-SequentialHandler put_mark_unstable{};
+Sleeper put_mark_unstable{};
 #endif
 
 }

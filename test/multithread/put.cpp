@@ -155,7 +155,7 @@ TEST(MultiPutTest, border_inserts3){
 /**
  * putによってnew layerが作られるケース
  */
-TEST(MultiPutTest, DISABLED_new_layers1){
+TEST(MultiPutTest, new_layers1){
   put_mark_unstable.use([](){
     was_unstable_marker.use([](){
       Masstree tree{};
@@ -168,7 +168,6 @@ TEST(MultiPutTest, DISABLED_new_layers1){
         ASSERT_TRUE(p != nullptr);
         EXPECT_EQ(p->getBody(), 0);
         EXPECT_TRUE(was_unstable_marker.isMarked());
-        put_mark_unstable.back();
       };
       auto w2 = [&tree](){
         GC gc{};

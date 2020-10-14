@@ -4,6 +4,8 @@
 #include <atomic>
 #include <xmmintrin.h>
 #include <functional>
+#include <chrono>
+#include <thread>
 
 namespace masstree{
 
@@ -103,6 +105,42 @@ private:
   bool marked{false};
 };
 
+/**
+ * 待機しているスレッドに通知し、一定時間処理を止めさせる。
+ */
+class Sleeper{
+public:
+
+  // sleepしている間に、他のthreadに処理を終えてもらう。
+  // そしてその処理が終わるかどうかに寄らずに処理を再開する
+  void sleepIfUsed(){
+    if(used){
+      give_flag = true;
+      using namespace std::chrono_literals;
+      std::this_thread::sleep_for(0.1s);
+    }
+  }
+
+  void waitGive()const{
+    assert(used);
+    while (!give_flag){
+      _mm_pause();
+    }
+  }
+
+  void use(const std::function<void(void)>& f){
+    used = true;
+    give_flag = false;
+    f();
+    used = false;
+  }
+
+private:
+  bool used{false};
+  std::atomic_bool give_flag{false};
+};
+
 }
+
 
 #endif //MASSTREE_DEBUG_HELPER_H

@@ -10,7 +10,7 @@
 namespace masstree{
 
 #ifndef NDEBUG
-extern SequentialHandler put_mark_unstable;
+extern Sleeper put_mark_unstable;
 #endif
 
 enum PutResult : uint8_t{
@@ -131,7 +131,7 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
     n->getKeySuffixes().delete_ptr(old_index);
     n->setLV(old_index, LinkOrValue(n1));
 #ifndef NDEBUG
-    put_mark_unstable.giveAndWaitBackIfUsed();
+    put_mark_unstable.sleepIfUsed();
 #endif
     n->setKeyLen(old_index, BorderNode::key_len_layer);
     n->unlock();
