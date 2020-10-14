@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <random>
-#include "../include/key.h"
-#include "../include/tree.h"
+#include "../src/key.h"
+#include "../src/tree.h"
 #include "sample.h"
-#include "../include/put.h"
-#include "../include/get.h"
-#include "../include/remove.h"
+#include "../src/put.h"
+#include "../src/get.h"
+#include "../src/remove.h"
 
 using namespace masstree;
 

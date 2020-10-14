@@ -1,6 +1,6 @@
 #ifndef MASSTREE_HELPER_H
 #define MASSTREE_HELPER_H
-#include "../include/tree.h"
+#include "../src/tree.h"
 
 using namespace masstree;
 

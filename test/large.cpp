@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <random>
 #include "sample.h"
-#include "../include/put.h"
-#include "../include/get.h"
-#include "../include/remove.h"
-#include "../include/alloc.h"
+#include "../src/put.h"
+#include "../src/get.h"
+#include "../src/remove.h"
+#include "../src/alloc.h"
 #include "helper.h"
-#include "../include/masstree.h"
+#include "../src/masstree.h"
 #include <xmmintrin.h>
 #include <thread>
 

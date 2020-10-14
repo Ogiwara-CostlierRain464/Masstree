@@ -13,8 +13,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_link_options(-lpthread)
 
-file(GLOB_RECURSE PROJECT_SOURCES include/*.cpp)
-file(GLOB_RECURSE PROJECT_HEADERS include/*.h)
+file(GLOB_RECURSE PROJECT_SOURCES src/*.cpp)
+file(GLOB_RECURSE PROJECT_HEADERS src/*.h)
 
 add_executable(${PROJECT_NAME}
         ${PROJECT_SOURCES}
@@ -59,11 +59,14 @@ endif()
 file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
 file(GLOB_RECURSE TEST_HEADERS test/*.h)
 
+# main.cppのみ外す
+list(REMOVE_ITEM PROJECT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+
 add_executable(tests
         ${TEST_SOURCES}
         ${TEST_HEADERS}
-        include/alloc.cpp
-        include/main.cpp
+        ${PROJECT_SOURCES}
+        ${PROJECT_HEADERS}
 )
 target_link_libraries(tests gtest_main)
 add_test(NAME example_test COMMAND tests)

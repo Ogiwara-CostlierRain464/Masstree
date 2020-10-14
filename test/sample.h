@@ -1,7 +1,7 @@
 #ifndef MASSTREE_SAMPLE_H
 #define MASSTREE_SAMPLE_H
 
-#include "../include/tree.h"
+#include "../src/tree.h"
 
 using namespace masstree;
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "sample.h"
-#include "../include/put.h"
+#include "../src/put.h"
 
 using namespace masstree;
 
