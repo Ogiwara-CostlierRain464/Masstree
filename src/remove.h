@@ -29,6 +29,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   assert(p.getNumKeys() == 1);
   assert(n->getIsRoot());
   assert(upper_layer != nullptr);
+  assert(n->getLocked());
 
   BigSuffix *upper_suffix;
   if(n->getKeyLen(p(0)) == BorderNode::key_len_has_suffix){
@@ -45,16 +46,24 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
 #endif
   }
 
-  upper_layer->setKeyLen(upper_index, BorderNode::key_len_has_suffix);
+  upper_layer->lock();
+
+  // UNSTABLEにしてからlvを更新し、HAS_SUFFIXに更新する。
+  upper_layer->setKeyLen(upper_index, BorderNode::key_len_unstable);
   assert(upper_layer->getKeySuffixes().get(upper_index) == nullptr);
   upper_layer->getKeySuffixes().set(upper_index, upper_suffix);
   upper_layer->setLV(upper_index, n->getLV(p(0)));
-  // 元のValueをクリアにしておく。
+  upper_layer->setKeyLen(upper_index, BorderNode::key_len_has_suffix);
+
+    // 元のValueをクリアにしておく。
   n->setLV(p(0), LinkOrValue{});
   n->getKeySuffixes().set(p(0), nullptr);
 
   n->setDeleted(true);
   gc.add(n);
+
+  n->unlock();
+  upper_layer->unlock();
 }
 
 
