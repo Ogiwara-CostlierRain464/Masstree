@@ -10,13 +10,13 @@ namespace masstree{
 
 #ifndef NDEBUG
 // lvを取得する直後のポイント
-static SequentialHandler get_handler0{};
+extern SequentialHandler get_handler0;
 // lvを取得した直後のポイント　
-static SequentialHandler get_handler1{};
+extern SequentialHandler get_handler1;
 // has_lockedである事が確認された直後のポイント
-static Marker has_locked_marker{};
+extern Marker has_locked_marker;
 // UNSTABLEである事が確認された直後のポイント
-static Marker was_unstable_marker{};
+extern Marker was_unstable_marker;
 #endif
 
 [[maybe_unused]]

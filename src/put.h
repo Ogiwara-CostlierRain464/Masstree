@@ -10,7 +10,7 @@
 namespace masstree{
 
 #ifndef NDEBUG
-static SequentialHandler put_mark_unstable{};
+extern SequentialHandler put_mark_unstable;
 #endif
 
 enum PutResult : uint8_t{
