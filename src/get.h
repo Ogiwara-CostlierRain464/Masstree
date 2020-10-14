@@ -9,8 +9,6 @@
 namespace masstree{
 
 #ifndef NDEBUG
-// lvを取得する直後のポイント
-extern SequentialHandler get_handler0;
 // lvを取得した直後のポイント　
 extern SequentialHandler get_handler1;
 // has_lockedである事が確認された直後のポイント
@@ -39,9 +37,6 @@ forward:
       goto retry;
     }
   }
-#ifndef NDEBUG
-  get_handler0.giveAndWaitBackIfUsed();
-#endif
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
 #ifndef NDEBUG
   get_handler1.giveAndWaitBackIfUsed();

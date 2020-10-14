@@ -182,3 +182,32 @@ TEST(MultiPutTest, new_layers1){
     });
   });
 }
+
+TEST(MultiPutTest, new_layers2){
+  get_handler1.use([](){
+    has_locked_marker.use([](){
+      Masstree tree{};
+      Key k({ONE, TWO}, 2);
+      GC _{};
+      tree.put(k, new Value(0), _);
+      auto w1 = [&tree, k]()mutable{
+        auto p = tree.get(k);
+        ASSERT_TRUE(p != nullptr);
+        EXPECT_EQ(p->getBody(), 0);
+        EXPECT_TRUE(!has_locked_marker.isMarked());
+      };
+      auto w2 = [&tree](){
+        get_handler1.waitGive();
+        GC gc{};
+        Key k1({ONE, THREE}, 2);
+        tree.put(k1, new Value(1), gc);
+        get_handler1.back();
+      };
+
+      std::thread a(w1);
+      std::thread b(w2);
+      a.join();
+      b.join();
+    });
+  });
+}
