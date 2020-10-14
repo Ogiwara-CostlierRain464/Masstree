@@ -4,9 +4,14 @@
 #include "tree.h"
 #include "alloc.h"
 #include "gc.h"
+#include "debug_helper.h"
 #include <algorithm>
 
 namespace masstree{
+
+#ifndef NDEBUG
+static SequentialHandler put_mark_unstable{};
+#endif
 
 enum PutResult : uint8_t{
   Done,
@@ -121,10 +126,14 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
 #endif
     }
 
-    n->setKeyLen(old_index, BorderNode::key_len_layer);
+    // Before update lv, mark the key as UNSTABLE.
+    n->setKeyLen(old_index, BorderNode::key_len_unstable);
     n->getKeySuffixes().delete_ptr(old_index);
     n->setLV(old_index, LinkOrValue(n1));
-
+#ifndef NDEBUG
+    put_mark_unstable.giveAndWaitBackIfUsed();
+#endif
+    n->setKeyLen(old_index, BorderNode::key_len_layer);
     n->unlock();
   }else{
     assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);

@@ -9,10 +9,14 @@
 namespace masstree{
 
 #ifndef NDEBUG
+// lvを取得する直後のポイント
+static SequentialHandler get_handler0{};
 // lvを取得した直後のポイント　
 static SequentialHandler get_handler1{};
 // has_lockedである事が確認された直後のポイント
 static Marker has_locked_marker{};
+// UNSTABLEである事が確認された直後のポイント
+static Marker was_unstable_marker{};
 #endif
 
 [[maybe_unused]]
@@ -35,6 +39,9 @@ forward:
       goto retry;
     }
   }
+#ifndef NDEBUG
+  get_handler0.giveAndWaitBackIfUsed();
+#endif
   auto t_lv = n->extractLinkOrValueFor(k); auto t = t_lv.first; auto lv = t_lv.second;
 #ifndef NDEBUG
   get_handler1.giveAndWaitBackIfUsed();
@@ -59,6 +66,9 @@ forward:
     goto retry;
   }else{
     assert(t == UNSTABLE);
+#ifndef NDEBUG
+    was_unstable_marker.markIfUsed();
+#endif
     goto forward;
   }
 }

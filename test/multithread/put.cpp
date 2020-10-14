@@ -2,6 +2,7 @@
 #include "../../include/get.h"
 #include "../../include/remove.h"
 #include "../sample.h"
+#include "../../include/masstree.h"
 #include <gtest/gtest.h>
 #include <thread>
 
@@ -154,6 +155,31 @@ TEST(MultiPutTest, border_inserts3){
 /**
  * putによってnew layerが作られるケース
  */
-TEST(MultiPutTest, new_layers){
+TEST(MultiPutTest, new_layers1){
+  put_mark_unstable.use([](){
+    was_unstable_marker.use([](){
+      Masstree tree{};
+      Key k({ONE, TWO}, 2);
+      GC _{};
+      tree.put(k, new Value(0), _);
+      auto w1 = [&tree, k]()mutable{
+        put_mark_unstable.waitGive();
+        auto p = tree.get(k);
+        ASSERT_TRUE(p != nullptr);
+        EXPECT_EQ(p->getBody(), 0);
+        EXPECT_TRUE(was_unstable_marker.isMarked());
+        put_mark_unstable.back();
+      };
+      auto w2 = [&tree](){
+        GC gc{};
+        Key k1({ONE, THREE}, 2);
+        tree.put(k1, new Value(1), gc);
+      };
 
+      std::thread a(w1);
+      std::thread b(w2);
+      a.join();
+      b.join();
+    });
+  });
 }

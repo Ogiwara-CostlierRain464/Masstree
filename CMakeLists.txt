@@ -63,6 +63,7 @@ add_executable(tests
         ${TEST_SOURCES}
         ${TEST_HEADERS}
         include/alloc.cpp
+        include/main.cpp
 )
 target_link_libraries(tests gtest_main)
 add_test(NAME example_test COMMAND tests)

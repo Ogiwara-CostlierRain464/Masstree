@@ -27,12 +27,14 @@ public:
   }
 
   inline void waitGive() noexcept{
+    assert(isUsed());
     while (!give_flag){
       _mm_pause();
     }
   }
 
   inline void back(){
+    assert(isUsed());
     back_flag = true;
   }
 
