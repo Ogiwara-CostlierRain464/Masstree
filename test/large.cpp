@@ -139,7 +139,7 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, DISABLED_multi_put_remove_layer0_test){
+TEST(LargeTest, multi_remove_remove_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 

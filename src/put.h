@@ -585,6 +585,7 @@ forward:
   auto p = n->getPermutation();
   assert(n->getLocked());
   if(v.deleted){
+    n->unlock();
     if(v.is_root){
       // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
       // getの時と同じように、putは途中まではただのreaderなのでこのような状況は

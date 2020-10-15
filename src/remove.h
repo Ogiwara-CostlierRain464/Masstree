@@ -203,6 +203,7 @@ retry:
 forward:
   assert(n->getLocked());
   if(v.deleted){
+    n->unlock();
     if(v.is_root){
       // 他のremoveが代わりに消したことになる
       // よって、ここで処理は終わる。
@@ -233,7 +234,7 @@ forward:
   }else if(t == NOTFOUND){
     // 何もしない?
     // 何らかの形でユーザに通知を行うべきだろうか？
-    ;
+    n->unlock();
   }else if(t == VALUE){
     /**
      * 削除
@@ -302,8 +303,8 @@ forward:
       goto retry;
     }
   }else{
-    assert(t == UNSTABLE);
-    goto forward;
+    // t == UNSTABLE
+    assert(false);
   }
 
   return std::make_pair(NotChange, root);
