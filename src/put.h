@@ -452,8 +452,8 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
  * @return
  */
 static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
-  assert(!left->getIsRoot());
-  assert(!right->getIsRoot());
+  assert(left->getIsRoot());
+  assert(left->getParent() == nullptr);
   auto root = new InteriorNode{};
 #ifndef NDEBUG
   Alloc::incInterior();
@@ -463,8 +463,11 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
   root->setKeySlice(0, slice);
   root->setChild(0, left);
   root->setChild(1, right);
+  // 親をセットしてから、is_rootをfalseにする
   left->setParent(root);
   right->setParent(root);
+  left->setIsRoot(false);
+  right->setIsRoot(false);
   return root;
 }
 
@@ -502,8 +505,6 @@ static Node *split(Node *n, const Key &k, Value *value){
 #ifndef NDEBUG
     Alloc::incBorder();
 #endif
-    // splitする時点で、nはrootにはなり得ない
-  n->setIsRoot(false);
   n->setSplitting(true);
   // n1 is initially locked
   n1->setVersion(n->getVersion());
@@ -532,12 +533,8 @@ ascend:
     return nullptr;
   }else{ // pはfull
     p->setSplitting(true);
-    // rootではなくなる、もしくはrootになりえない。
-    p->setIsRoot(false);
     size_t n_index = p->findChildIndex(n);
-    std::atomic_thread_fence(std::memory_order_acq_rel);
     n->unlock();
-    std::atomic_thread_fence(std::memory_order_acq_rel);
     Node *p1 = new InteriorNode{};
 #ifndef NDEBUG
     Alloc::incInterior();

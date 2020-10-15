@@ -136,6 +136,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       // rootが変わり、upper_layerからの付け替えが必要になる
       if(upper_layer == nullptr){
         // Layer0の時
+        // is_rootをtrueにしてからparentをnullptrにする
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
         n->connectPrevAndNext();
@@ -146,6 +147,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
+        // is_rootをtrueにしてからparentをnullptrにする
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
         upper_layer->setLV(upper_index, LinkOrValue(pull_up_node));
