@@ -240,8 +240,6 @@ static size_t cut(size_t len){
  */
 static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index, std::optional<KeySlice> &k_prime){
   assert(!p->isNotFull());
-  assert(!p->getIsRoot());
-  assert(!p1->getIsRoot());
 
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};

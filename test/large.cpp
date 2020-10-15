@@ -70,7 +70,7 @@ TEST(LargeTest, DISABLED_put_get){
   }
 }
 
-TEST(LargeTest, put_get_remove){
+TEST(LargeTest, DISABLED_put_get_remove){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -220,7 +220,7 @@ TEST(LargeTest, DISABLED_multi_remove_remove_layer0_test){
   }
 }
 
-TEST(LargeTest, multi_put_put_layer0_test){
+TEST(LargeTest, DISABLED_multi_put_put_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -263,7 +263,7 @@ TEST(LargeTest, multi_put_put_layer0_test){
   }
 }
 
-TEST(LargeTest, multi_put_remove_remove_layer0_test){
+TEST(LargeTest, DISABLED_multi_put_remove_remove_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -317,7 +317,7 @@ TEST(LargeTest, multi_put_remove_remove_layer0_test){
 
 
 
-TEST(LargeTest, multi_new_layer_put_get){
+TEST(LargeTest, DISABLED_multi_new_layer_put_get){
   auto seed = time(nullptr); // UNSTABLE errorが出るseed
   srand(seed);
 
@@ -353,7 +353,7 @@ TEST(LargeTest, multi_new_layer_put_get){
   }
 }
 
-TEST(LargeTest, multi_new_layer_put_remove){
+TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -393,7 +393,7 @@ TEST(LargeTest, multi_new_layer_put_remove){
   }
 }
 
-TEST(LargeTest, multi_new_layer_put_remove_get){
+TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -445,7 +445,7 @@ TEST(LargeTest, multi_new_layer_put_remove_get){
   }
 }
 
-TEST(LargeTest, multi_put_get){
+TEST(LargeTest, DISABLED_multi_put_get){
   for(size_t i = 0; i < 100000; ++i){
 
     Masstree tree{};
