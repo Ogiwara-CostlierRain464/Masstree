@@ -192,6 +192,14 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
 
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  /**
+   * removeの場合はまずすぐにlockを取る
+   * lockをとる直前にそのnodeがdeletedになるかもしれないし、
+   * 消すべき値がsplitによって移動するかもしれない
+   *
+   * ここでキーとなるのが、値の削除が発生してもkeyが左に動かない、という不変性である！
+   *
+   */
 forward:
   if(v.deleted){
     if(v.is_root){
@@ -254,6 +262,12 @@ forward:
      * 上でindexを取得しているが、これほど無意味な情報はないだろう。
      * もう少し早いタイミングでlockを確保し、不正なデータを取得しないようにすべきだ。
      * remove, putも最初はreaderである。では、どのポイントからwriterになるべきであろうか？
+     *
+     * 例えば、この時点でlvがnext layerに変わってもおかしくない。
+     * lockした状態でさらに確認をとり、unlockをし、また次のlayerにいくわけだ。
+     *
+     * これはコードを無駄に二度も書くことになるし、また結局はlockを外してから下に降りるわけだ。
+     * それは面倒である。では、もうfindBorderした時点でlockをとると決めて仕舞えば良いのではないか？
      */
 
 

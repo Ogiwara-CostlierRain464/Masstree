@@ -587,6 +587,14 @@ forward:
       goto retry;
     }
   }
+  /**
+   * putの場合はfindBorderでnをゲットしたら、すぐにlockをする
+   * lockをする直前にそのnodeがdeletedになるかもしれないし、値を挿入すべきBorderNodeがsplitによって移動されるかもしれない
+   * deleteされた場合はrootからやり直すしかない。
+   * splitされた場合は、nextを辿ってputすべきborder nodeを探し、もう一度やり直す。
+   * この時、hand over hand lockingが必要となるであろう。
+   */
+
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);

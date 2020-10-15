@@ -45,9 +45,7 @@ public:
   }
 
   void lock(){
-//    // NOTE: 論文通りの記述にとりあえず従った
-//    if(this == nullptr)
-//      return;
+    assert(this != nullptr);
     for(;;){
       auto expected = getVersion();
       if(expected.locked){
@@ -89,7 +87,10 @@ public:
     }
     if(p != reinterpret_cast<Node *>(getParent())){
       assert(p != nullptr);
-      p->unlock(); goto retry;
+      if(p != nullptr){
+        p->unlock();
+      }
+      goto retry;
     }
     return reinterpret_cast<InteriorNode *>(p);
   }
