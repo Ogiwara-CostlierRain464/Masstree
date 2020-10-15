@@ -70,11 +70,11 @@ TEST(LargeTest, DISABLED_put_get){
   }
 }
 
-TEST(LargeTest, DISABLED_put_get_remove){
+TEST(LargeTest, put_get_remove){
   auto seed = time(nullptr);
   srand(seed);
 
-  constexpr size_t COUNT = 100000;
+  constexpr size_t COUNT = 10000;
   GC gc{};
 
 
@@ -393,7 +393,7 @@ TEST(LargeTest, multi_new_layer_put_remove){
   }
 }
 
-TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
+TEST(LargeTest, multi_new_layer_put_remove_get){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -411,7 +411,7 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_key();
-        tree.remove(*k, gc);
+        tree.put(*k, new Value(i) ,gc);
       }
     };
 
@@ -422,6 +422,55 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
       for(size_t i = 0; i < 14; ++i){
         auto k = make_key();
         tree.remove(*k, gc);
+      }
+    };
+
+    auto w3 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 14; ++i){
+        auto k = make_key();
+        tree.get(*k);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    std::thread c(w3);
+    ready = true;
+    a.join();
+    b.join();
+    c.join();
+  }
+}
+
+TEST(LargeTest, multi_put_get){
+  for(size_t i = 0; i < 100000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC _{};
+    tree.put(k0, new Value(0), _);
+    std::atomic_bool ready{false};
+
+    auto w1 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 30; ++i){
+        auto k = make_key();
+        tree.put(*k, new Value(i) ,gc);
+      }
+    };
+
+    auto w2 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 30; ++i){
+        auto k = make_key();
+        tree.get(*k);
       }
     };
 

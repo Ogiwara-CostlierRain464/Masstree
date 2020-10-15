@@ -99,9 +99,9 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     return std::make_pair(LayerDeleted, nullptr);
   }
 
-  // TODO: parentのlock
-
   auto p = n->getParent();
+  // n -> pの順でlockをとる
+  p->lock();
   auto n_index = p->findChildIndex(n);
 
   if(p->getNumKeys() >= 2){
@@ -172,6 +172,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       gc.add(n);
     }
   }
+
+  // n -> p の順でunlock
+  n->unlock();
+  p->unlock();
 
   return std::make_pair(NotChange, nullptr);
 }
@@ -289,7 +293,6 @@ forward:
 
     if(current_num_keys == 0){
       auto pair = delete_border_node_in_remove(n, upper_layer, upper_index, gc);
-      n->unlock();
       if(pair.first != NotChange){
         return pair;
       }
