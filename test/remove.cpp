@@ -544,7 +544,10 @@ TEST(RemoveTest, handle_delete_layer_in_remove){
   n->setPermutation(Permutation::from({1}));
   n->setIsRoot(true);
 
+  n->lock();
   handle_delete_layer_in_remove(n, upper, upper_index, gc);
+  ASSERT_TRUE(n->isUnlocked());
+  ASSERT_TRUE(upper->isUnlocked());
 
   EXPECT_EQ(upper->getKeyLen(upper_index), BorderNode::key_len_has_suffix);
   EXPECT_EQ(upper->getLV(upper_index).value, &v);
