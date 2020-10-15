@@ -46,9 +46,16 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
 #endif
   }
 
+  // n -> upper_layerの順で
   upper_layer->lock();
 
-  // UNSTABLEにしてからlvを更新し、HAS_SUFFIXに更新する。
+  /**
+   * まず、UNSTABLEとマークする
+   * 次に、KeySuffixへのリンクを貼る
+   * そして、lvを書き換える
+   * そして、HAS_SUFFIXに書き換える
+   * 最後に、nの方のlvとKeySuffixをunrefしておく
+   */
   upper_layer->setKeyLen(upper_index, BorderNode::key_len_unstable);
   assert(upper_layer->getKeySuffixes().get(upper_index) == nullptr);
   upper_layer->getKeySuffixes().set(upper_index, upper_suffix);
@@ -62,6 +69,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   n->setDeleted(true);
   gc.add(n);
 
+  // n -> upper_layer の順番でunlockする
   n->unlock();
   upper_layer->unlock();
 }

@@ -142,6 +142,10 @@ public:
     return v.locked;
   }
 
+  /**
+   * NOTE: assert(isUnlocked())は無効であることに注意
+   * @return
+   */
   [[nodiscard]]
   inline bool isUnlocked() const{
     return !getLocked();
