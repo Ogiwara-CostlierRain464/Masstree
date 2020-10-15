@@ -139,7 +139,8 @@ TEST(LargeTest, DISABLED_random_op){
   Alloc::reset();
 }
 
-TEST(LargeTest, multi_remove_remove_layer0_test){
+
+TEST(LargeTest, DISABLED_multi_put_remove_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -157,7 +158,7 @@ TEST(LargeTest, multi_remove_remove_layer0_test){
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_1layer_key();
-        tree.remove(*k, gc);
+        tree.put(*k, new Value(i), gc);
       }
     };
 
@@ -178,7 +179,6 @@ TEST(LargeTest, multi_remove_remove_layer0_test){
     b.join();
   }
 }
-
 
 TEST(LargeTest, DISABLED_multi_remove_remove_layer0_test){
   auto seed = time(nullptr);
@@ -220,8 +220,7 @@ TEST(LargeTest, DISABLED_multi_remove_remove_layer0_test){
   }
 }
 
-
-TEST(LargeTest, DISABLED_multi_put_put_layer0_test){
+TEST(LargeTest, multi_put_put_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -264,7 +263,7 @@ TEST(LargeTest, DISABLED_multi_put_put_layer0_test){
   }
 }
 
-TEST(LargeTest, DISABLED_multi_put_remove_remove_layer0_test){
+TEST(LargeTest, multi_put_remove_remove_layer0_test){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -318,11 +317,11 @@ TEST(LargeTest, DISABLED_multi_put_remove_remove_layer0_test){
 
 
 
-TEST(LargeTest, DISABLED_multi_new_layer_put_get){
-  auto seed = 1602407569; // UNSTABLE errorが出るseed
+TEST(LargeTest, multi_new_layer_put_get){
+  auto seed = time(nullptr); // UNSTABLE errorが出るseed
   srand(seed);
 
-  for(size_t i = 0; i < 100000; ++i){
+  for(size_t i = 0; i < 10000; ++i){
 
     std::atomic<Node*> root = nullptr;
     std::atomic_bool ready{false};
@@ -354,7 +353,7 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_get){
   }
 }
 
-TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
+TEST(LargeTest, multi_new_layer_put_remove){
   auto seed = time(nullptr);
   srand(seed);
 
