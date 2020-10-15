@@ -145,7 +145,6 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
   }else{
     assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);
   }
-  n->unlock();
 }
 
 
@@ -618,8 +617,10 @@ forward:
     if(check){
       auto old_index = check.value();
       handle_break_invariant(n, k, value, old_index, gc);
+      auto next_layer = n->getLV(old_index).next_layer;
+      n->unlock();
       k.next();
-      auto pair = put(n->getLV(old_index).next_layer, k, value, n, old_index, gc);
+      auto pair = put(next_layer, k, value, n, old_index, gc);
       if(pair.first == Retry){
         return std::make_pair(Retry, nullptr);
       }

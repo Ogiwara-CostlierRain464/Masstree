@@ -96,11 +96,13 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     assert(upper_layer == nullptr);
     n->setDeleted(true);
     gc.add(n);
+    n->unlock();
     return std::make_pair(LayerDeleted, nullptr);
   }
 
+
+  // 親とかのlockとる
   auto p = n->getParent();
-  // n -> pの順でlockをとる
   p->lock();
   auto n_index = p->findChildIndex(n);
 
@@ -126,7 +128,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     n->connectPrevAndNext();
     n->setDeleted(true);
     gc.add(n);
-    // rootの変更無し
+    n->unlock();
+    p->unlock();
   }else{
     assert(p->getNumKeys() == 1);
     auto pull_up_index = n_index == 1 ? 0 : 1;
@@ -144,6 +147,8 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         n->setDeleted(true);
         gc.add(p);
         gc.add(n);
+        n->unlock();
+        p->unlock();
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
@@ -157,10 +162,13 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         n->setDeleted(true);
         gc.add(p);
         gc.add(n);
+        n->unlock();
+        p->unlock();
         return std::make_pair(NewRoot, pull_up_node);
       }
     }else{
       auto pp = p->getParent();
+      pp->lock();
       auto p_index = pp->findChildIndex(p);
       pp->setChild(p_index, pull_up_node);
       pull_up_node->setParent(pp);
@@ -170,12 +178,11 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       n->setDeleted(true);
       gc.add(p);
       gc.add(n);
+      n->unlock();
+      p->unlock();
+      pp->unlock();
     }
   }
-
-  // n -> p の順でunlock
-  n->unlock();
-  p->unlock();
 
   return std::make_pair(NotChange, nullptr);
 }
