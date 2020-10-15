@@ -581,6 +581,8 @@ public:
    */
   void connectPrevAndNext(){
     // TODO: CAS等でatomicに行う必要性がある。
+    // prevをロックしてしまうと、それはdeadlockとなる。
+    // おそらく、nextのロックだけで十分なはずである。
     auto next_ = getNext();
     auto prev_ = getPrev();
 

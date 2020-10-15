@@ -581,10 +581,11 @@ forward:
   if(v.deleted){
     n->unlock();
     if(v.is_root){
-      // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
+      // 探していたKeyを入れるべきBorderNodeが上のLayerに行ってしまった時、あるいはLayer0が消えた時
       // getの時と同じように、putは途中まではただのreaderなのでこのような状況は
       // 発生しうる。
-      // 最も簡単なのは、treeのrootから処理をやり直すことである。
+      // とりあえず最も簡単なのは、treeのrootから処理をやり直すことである。
+      // しかしとても効率が悪いので、一つ上のlayerに戻ってやり直すべきであろう。
       return std::make_pair(Retry, nullptr);
     }else{
       goto retry;

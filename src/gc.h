@@ -59,7 +59,6 @@ public:
   void run() noexcept{
     for(auto &b: borders){
       // destructorでvalueとsuffixも解放される
-      // TODO: BorderNodeの削除と同時にデストラクタでその子要素を削除するのは不適切であろうか？
       delete b;
 #ifndef NDEBUG
       Alloc::decBorder();

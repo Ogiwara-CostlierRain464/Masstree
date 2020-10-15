@@ -84,7 +84,10 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
  * @param n
  * @return new root
  */
-static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){ // ここでupper_layerとupper_indexを保持しているが、splitにより移動する。どう対処するか？
+static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
+  // ここでupper_layerとupper_indexを保持しているが、splitにより移動する。どう対処するか？
+  // parentに親のBorderNodeを入れる？それとも、parentとは別のfieldを追加して、BorderからBorderへのリンクを貼るか？
+  // 既存の方法で保存する事はほぼ不可能
   assert(n->getLocked());
   auto per = n->getPermutation();
   // すでに要素は削除済み
