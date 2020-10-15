@@ -192,15 +192,16 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
 
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  n->lock();
   /**
-   * removeの場合はまずすぐにlockを取る
-   * lockをとる直前にそのnodeがdeletedになるかもしれないし、
-   * 消すべき値がsplitによって移動するかもしれない
-   *
+   * removeの場合はfindBorderでnをゲットしたら、すぐにlockをする
+   * findBorderとlockの間にそのnodeがdeletedになるかもしれないし、
+   * 値を削除すべきBorderNodeがsplitによって移動されるかもしれないし、
+   * 他のremoveが該当するキーを消すかもしれない(あるいは、同じkeyのremoveが二度呼ばれるかもしれない)
    * ここでキーとなるのが、値の削除が発生してもkeyが左に動かない、という不変性である！
-   *
    */
 forward:
+  assert(n->getLocked());
   if(v.deleted){
     if(v.is_root){
       // 他のremoveが代わりに消したことになる
@@ -214,10 +215,19 @@ forward:
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);
   auto index = std::get<2>(t_lv_i);
-  if((n->getVersion() ^ v) > Version::has_locked){
-    v = n->stableVersion(); auto next = n->getNext();
-    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
-      n = next; v = n->stableVersion(); next = n->getNext();
+  if(Version::splitHappened(v, n->getVersion())){
+    // findBorderとlockの間でsplit処理が起きたら
+    v = n->getVersion();
+    auto next = n->getNext();
+
+    while (!v.deleted and next != nullptr){
+      next->lock();
+      n->unlock(); // Hand-over-Hand locking
+      if(k.getCurrentSlice().slice >= next->lowestKey()){
+        n = next; v = n->getVersion(); next = n->getNext();
+      }else{
+        break;
+      }
     }
     goto forward;
   }else if(t == NOTFOUND){
@@ -253,32 +263,12 @@ forward:
      * NOTE: どのケースにおいても、先に親としてのinteriorに先に
      * ロックをかける必要がありそうだ
      */
-    n->lock();
-    /**
-     * ロックを取ったのでこれ以降はそのBorderNodeは変わらない。
-     * しかし、extractLinkから値が返されてロックをとるまでの間に、
-     * BorderNodeの変更が発生するであろう。
-     *
-     * 上でindexを取得しているが、これほど無意味な情報はないだろう。
-     * もう少し早いタイミングでlockを確保し、不正なデータを取得しないようにすべきだ。
-     * remove, putも最初はreaderである。では、どのポイントからwriterになるべきであろうか？
-     *
-     * 例えば、この時点でlvがnext layerに変わってもおかしくない。
-     * lockした状態でさらに確認をとり、unlockをし、また次のlayerにいくわけだ。
-     *
-     * これはコードを無駄に二度も書くことになるし、また結局はlockを外してから下に降りるわけだ。
-     * それは面倒である。では、もうfindBorderした時点でlockをとると決めて仕舞えば良いのではないか？
-     */
 
-
-    // この時点で、もうすでに他のremoveによって消されている可能性がある。
-    // それは、単に他の要素も残っている状態で消されたのかもしれないし、
-    // あるいはすでにPermutationのn_keysが0でdeletedとなっているかもしれない。
-    // しかしながら、どのケースにおいても削除されたことを確認するだけで良い。
-    if(n->isKeyRemoved(index)){
-      n->unlock();
-      return std::make_pair(NotChange, root);
-    }
+    // lockを取ってからextractLinkを行ったので、これは実行されない。
+//    if(n->isKeyRemoved(index)){
+//      n->unlock();
+//      return std::make_pair(NotChange, root);
+//    }
 
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
@@ -304,6 +294,7 @@ forward:
       n->unlock();
     }
   }else if(t == LAYER){
+    n->unlock();
     k.next();
     auto pair = remove(lv.next_layer, k, n, index, gc);
     if(pair.first == LayerDeleted){

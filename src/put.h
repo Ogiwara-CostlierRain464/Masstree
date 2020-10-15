@@ -572,14 +572,15 @@ static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, BorderNo
   }
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  n->lock();
   /**
    * putの場合はfindBorderでnをゲットしたら、すぐにlockをする
-   * lockをする直前にそのnodeがdeletedになるかもしれないし、値を挿入すべきBorderNodeがsplitによって移動されるかもしれない
-   * deleteされた場合はrootからやり直すしかない。
+   * lockをする直前にそのnodeがdeletedになるかもしれないし、
+   * 値を挿入すべきBorderNodeがsplitによって移動されるかもしれないし、
+   * 他のputがすでに値を追加しているかもしれない(あるいは、同じkeyのputが二度呼ばれるかもしれない)
    * splitされた場合は、nextを辿ってputすべきborder nodeを探し、もう一度やり直す。
    * この時、hand over hand lockingが必要となるであろう。
    */
-  n->lock();
 forward:
   auto p = n->getPermutation();
   assert(n->getLocked());
