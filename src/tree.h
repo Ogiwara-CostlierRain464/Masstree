@@ -512,6 +512,7 @@ public:
  * @param key
  * @return
  */
+ [[deprecated]]
   std::tuple<ExtractResult, LinkOrValue, size_t> extractLinkOrValueWithIndexFor(const Key &key){
     /**
      * 現在のkey sliceの次のkey sliceがあるかどうかで場合わけ

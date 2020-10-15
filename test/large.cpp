@@ -354,7 +354,7 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_get){
   }
 }
 
-TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
+TEST(LargeTest, multi_new_layer_put_remove){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -372,7 +372,7 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
       GC gc{};
       for(size_t i = 0; i < 14; ++i){
         auto k = make_key();
-        tree.remove(*k, gc);
+        tree.put(*k, new Value(i) ,gc);
       }
     };
 

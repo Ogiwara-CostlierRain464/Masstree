@@ -65,3 +65,12 @@ TEST(MutiRemoveTest, put_and_remove_at_root_border_layer0){
     EXPECT_EQ(p->getBody(), 1);
   }
 }
+
+/**
+ * removeによって、layerが消されるケース
+ */
+TEST(MutiRemoveTest, new_layers1){
+  get_handler1.use([](){
+
+  });
+}

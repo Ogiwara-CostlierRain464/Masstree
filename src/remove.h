@@ -196,6 +196,7 @@ forward:
   if(v.deleted){
     if(v.is_root){
       // 他のremoveが代わりに消したことになる
+      // よって、ここで処理は終わる。
       return std::make_pair(NotChange, root);
     }else{
       goto retry;
@@ -245,6 +246,17 @@ forward:
      * ロックをかける必要がありそうだ
      */
     n->lock();
+    /**
+     * ロックを取ったのでこれ以降はそのBorderNodeは変わらない。
+     * しかし、extractLinkから値が返されてロックをとるまでの間に、
+     * BorderNodeの変更が発生するであろう。
+     *
+     * 上でindexを取得しているが、これほど無意味な情報はないだろう。
+     * もう少し早いタイミングでlockを確保し、不正なデータを取得しないようにすべきだ。
+     * remove, putも最初はreaderである。では、どのポイントからwriterになるべきであろうか？
+     */
+
+
     // この時点で、もうすでに他のremoveによって消されている可能性がある。
     // それは、単に他の要素も残っている状態で消されたのかもしれないし、
     // あるいはすでにPermutationのn_keysが0でdeletedとなっているかもしれない。
