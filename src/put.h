@@ -126,14 +126,21 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
 #endif
     }
 
-    // Before update lv, mark the key as UNSTABLE.
+    /**
+     * まず、UNSTABLEとマークする
+     * 次に、lvを書き換える
+     * そして、NEXT_LAYERに書き換える
+     * そして、KeySuffixをGCに追加し、このBorderNodeからリンクを外す
+     * 最後に、このNodeをunlockする
+     */
     n->setKeyLen(old_index, BorderNode::key_len_unstable);
-    n->getKeySuffixes().delete_ptr(old_index);
     n->setLV(old_index, LinkOrValue(n1));
 #ifndef NDEBUG
     put_mark_unstable.sleepIfUsed();
 #endif
     n->setKeyLen(old_index, BorderNode::key_len_layer);
+    gc.add(n->getKeySuffixes().get(old_index));
+    n->getKeySuffixes().unref(old_index);
     n->unlock();
   }else{
     assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);

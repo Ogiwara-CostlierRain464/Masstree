@@ -436,6 +436,14 @@ public:
     return suffixes[i].load(std::memory_order_acquire);
   }
 
+  /**
+   * リファレンスを外す
+   */
+  void unref(size_t i){
+    assert(get(i) != nullptr);
+    set(i, nullptr);
+  }
+
   void delete_ptr(size_t i){
     auto ptr = get(i);
     assert(ptr != nullptr);
@@ -453,18 +461,6 @@ public:
         delete_ptr(i);
       }
     }
-  }
-
-  /**
-   * from以降で、keyがsuffixと一致するか
-   * @param i
-   * @param key
-   * @param from
-   * @return
-   */
-  [[nodiscard]]
-  bool isSame(size_t i, const Key &key, size_t from) const{
-    return get(i)->isSame(key, from);
   }
 
   /**
@@ -549,7 +545,9 @@ public:
         if(getKeySlice(true_index) == current.slice){
           if(getKeyLen(true_index) == BorderNode::key_len_has_suffix){
             // suffixの中を見る
-            if(getKeySuffixes().isSame(true_index, key, key.cursor + 1)){
+            // この処理中に、BorderNodeからunrefされているかもしれない。
+            auto suffix = getKeySuffixes().get(true_index);
+            if(suffix != nullptr and suffix->isSame(key, key.cursor + 1)){
               return std::tuple(VALUE, getLV(true_index), true_index);
             }
           }

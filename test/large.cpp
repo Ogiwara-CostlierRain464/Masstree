@@ -318,11 +318,11 @@ TEST(LargeTest, multi_put_remove_remove_layer0_test){
 
 
 
-TEST(LargeTest, DISABLED_multi_insert_border_test){
+TEST(LargeTest, multi_insert_border_test){
   auto seed = 1602407569; // UNSTABLE errorが出るseed
   srand(seed);
 
-  for(size_t i = 0; i < 1000000; ++i){
+  for(size_t i = 0; i < 100000; ++i){
 
     std::atomic<Node*> root = nullptr;
     std::atomic_bool ready{false};
