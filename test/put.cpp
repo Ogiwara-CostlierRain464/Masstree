@@ -32,6 +32,7 @@ TEST(PutTest, check_break_invariant){
   p.setKeyIndex(0, 1);
   p.setNumKeys(1);
   border.setPermutation(p);
+  border.lock();
   EXPECT_EQ(check_break_invariant(&border, k), 1);
 }
 
@@ -51,6 +52,7 @@ TEST(PutTest, handle_break_invariant){
   auto j = new Value(5);
   Key k({EIGHT, ONE, TWO, CD}, 2);
   GC gc{};
+  borderNode->lock();
   handle_break_invariant(borderNode, k, j, 1, gc);
 
   ASSERT_EQ(borderNode->getKeyLen(1), BorderNode::key_len_layer);

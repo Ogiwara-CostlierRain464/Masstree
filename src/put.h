@@ -61,6 +61,7 @@ static BorderNode *start_new_tree(const Key &key, Value *value){
  * @return 違反の原因となる、現在borderNodeに挿入されているkey sliceのインデックス、もしくはnull。
  */
 static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
+  assert(borderNode->getLocked());
   auto p = borderNode->getPermutation();
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
@@ -85,6 +86,7 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
  * @param old_index
  */
 static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t old_index, GC &gc){
+  assert(n->getLocked());
   if(n->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
@@ -99,7 +101,6 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
     *
     * @see §4.6.3
     */
-    n->lock();
     auto n1 = new BorderNode{};
 #ifndef NDEBUG
     Alloc::incBorder();
@@ -141,10 +142,10 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
     n->setKeyLen(old_index, BorderNode::key_len_layer);
     gc.add(n->getKeySuffixes().get(old_index));
     n->getKeySuffixes().unref(old_index);
-    n->unlock();
   }else{
     assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);
   }
+  n->unlock();
 }
 
 
@@ -524,10 +525,9 @@ ascend:
     size_t n_index = p->findChildIndex(n);
     auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     insert_into_parent(p, n1, up ,n_index);
+    // ここはreorderできないことに注意する
     n->unlock();
-    std::atomic_thread_fence(std::memory_order_acq_rel);
     n1->unlock();
-    std::atomic_thread_fence(std::memory_order_acq_rel);
     p->unlock();
     return nullptr;
   }else{ // pはfull
@@ -572,21 +572,6 @@ static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, BorderNo
   }
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
-  auto p = n->getPermutation();
-forward:
-  if(v.deleted){
-    if(v.is_root){
-      // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
-      // getの時と同じように、putは途中まではただのreaderなのでこのような状況は
-      // 発生しうる。
-      // 一つ上のLayerのrootからやり直すか？しかしながら、
-      // 他のremoveによって大幅にlayerの構成が変わっていてもおかしくはない
-      // 最も簡単なのは、treeのrootから処理をやり直すことである。
-      return std::make_pair(Retry, nullptr);
-    }else{
-      goto retry;
-    }
-  }
   /**
    * putの場合はfindBorderでnをゲットしたら、すぐにlockをする
    * lockをする直前にそのnodeがdeletedになるかもしれないし、値を挿入すべきBorderNodeがsplitによって移動されるかもしれない
@@ -594,15 +579,38 @@ forward:
    * splitされた場合は、nextを辿ってputすべきborder nodeを探し、もう一度やり直す。
    * この時、hand over hand lockingが必要となるであろう。
    */
-
+  n->lock();
+forward:
+  auto p = n->getPermutation();
+  assert(n->getLocked());
+  if(v.deleted){
+    if(v.is_root){
+      // 探していたKeyが上のLayerに行ってしまった時、あるいはLayer0が消えた時
+      // getの時と同じように、putは途中まではただのreaderなのでこのような状況は
+      // 発生しうる。
+      // 最も簡単なのは、treeのrootから処理をやり直すことである。
+      return std::make_pair(Retry, nullptr);
+    }else{
+      goto retry;
+    }
+  }
   auto t_lv_i = n->extractLinkOrValueWithIndexFor(k);
   auto t = std::get<0>(t_lv_i);
   auto lv = std::get<1>(t_lv_i);
   auto index = std::get<2>(t_lv_i);
-  if((n->getVersion() ^ v) > Version::has_locked){
-    v = n->stableVersion(); auto next = n->getNext();
-    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
-      n = next; v = n->stableVersion(); next = n->getNext();
+  if(Version::splitHappened(v, n->getVersion())){
+    // findBorderとlockの間でsplit処理が起きたら
+    v = n->getVersion();
+    auto next = n->getNext();
+
+    while (!v.deleted and next != nullptr){
+      next->lock();
+      n->unlock(); // Hand-over-Hand locking
+      if(k.getCurrentSlice().slice >= next->lowestKey()){
+        n = next; v = n->getVersion(); next = n->getNext();
+      }else{
+        break;
+      }
     }
     goto forward;
   }else if(t == NOTFOUND){
@@ -618,13 +626,10 @@ forward:
       }
     }else{
       if(p.isNotFull()){
-        n->lock();
         insert_into_border(n, k, value, gc);
         n->unlock();
       }else{
-        n->lock();
         auto may_new_root = split(n, k, value);
-        assert(n->isUnlocked());
         if(may_new_root != nullptr){
           // rootがsplitによって新しくなったので、Layer0以外においては
           // 上のlayerのlv.next_layerを更新する必要がある
@@ -640,15 +645,17 @@ forward:
     // 上書き
     gc.add(n->getLV(index).value);
     n->setLV(index, LinkOrValue(value));
+    n->unlock();
   }else if(t == LAYER){
+    n->unlock();
     k.next();
     auto pair = put(lv.next_layer, k, value, n, index, gc);
     if(pair.first == Retry){
       return std::make_pair(Retry, nullptr);
     }
   }else {
-    assert(t == UNSTABLE);
-    goto forward;
+    // t == UNSTABLE
+    assert(false);
   }
 
   return std::make_pair(Done, root);

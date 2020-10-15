@@ -2,6 +2,7 @@
 #define MASSTREE_VERSION_H
 
 #include <cstdint>
+#include <cassert>
 
 namespace masstree{
 
@@ -23,6 +24,11 @@ struct Version{
    * おそらく、特定のfieldの変化のみを追うことによって並行性性能をあげられそうだ
    */
   static constexpr uint32_t has_locked = 0;
+
+  static bool splitHappened(const Version &before, const Version &after){
+    assert(after.v_split >= before.v_split);
+    return before.v_split != after.v_split;
+  }
 
   union {
     uint32_t body;

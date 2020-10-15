@@ -354,7 +354,7 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_get){
   }
 }
 
-TEST(LargeTest, multi_new_layer_put_remove){
+TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
   auto seed = time(nullptr);
   srand(seed);
 
