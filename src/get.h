@@ -26,6 +26,12 @@ static Value *get(Node *root, Key &k){
   }
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
+  /**
+   * getではlockを取れない。
+   * findBorderやextractLinkOrValueの後にnがsplitされる可能性や、探しているkeyが
+   * next_layerに移動するかもしれない。
+   * has_lockedやUNSTABLEによるチェックで必要な高さからやり直しを行う。
+   */
 forward:
   if(v.deleted){
     if(v.is_root){
