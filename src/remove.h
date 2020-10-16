@@ -111,6 +111,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
 
   if(p->getNumKeys() >= 2){
     // 左にシフト
+    p->setInserting(true);
     if(n_index == 0){
       for(size_t i = 0; i <= 13; ++i){
         p->setKeySlice(i, p->getKeySlice(i+1));
@@ -239,10 +240,11 @@ forward:
 
     while (!v.deleted and next != nullptr){
       next->lock();
-      n->unlock(); // Hand-over-Hand locking
       if(k.getCurrentSlice().slice >= next->lowestKey()){
+        n->unlock(); // Hand-over-Hand locking
         n = next; v = n->getVersion(); next = n->getNext();
       }else{
+        next->unlock();
         break;
       }
     }

@@ -20,6 +20,12 @@ Key *make_1layer_key(){
   return new Key({slice}, size);
 }
 
+Key *make_1layer_variable_key(){
+  KeySlice slice = rand() % 1000;
+  auto size = (rand() % 8) + 1;
+  return new Key({slice}, size);
+}
+
 Key *make_key(){
   std::vector<KeySlice> vec{};
   size_t slices_len = (rand() % 2) + 1;
@@ -445,8 +451,8 @@ TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
   }
 }
 
-TEST(LargeTest, DISABLED_multi_put_get){
-  for(size_t i = 0; i < 100000; ++i){
+TEST(LargeTest, multi_layer0_put_get){
+  for(size_t i = 0; i < 10000; ++i){
 
     Masstree tree{};
     Key k0({0}, 1);
@@ -459,7 +465,7 @@ TEST(LargeTest, DISABLED_multi_put_get){
 
       GC gc{};
       for(size_t i = 0; i < 30; ++i){
-        auto k = make_key();
+        auto k = make_1layer_variable_key();
         tree.put(*k, new Value(i) ,gc);
       }
     };
@@ -469,7 +475,7 @@ TEST(LargeTest, DISABLED_multi_put_get){
 
       GC gc{};
       for(size_t i = 0; i < 30; ++i){
-        auto k = make_key();
+        auto k = make_1layer_variable_key();
         tree.get(*k);
       }
     };
@@ -479,5 +485,48 @@ TEST(LargeTest, DISABLED_multi_put_get){
     ready = true;
     a.join();
     b.join();
+  }
+}
+
+TEST(LargeTest, multi_layer0_put_remove){
+  auto seed = time(nullptr);
+  srand(seed);
+  for(size_t i = 0; i < 10000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC _{};
+    tree.put(k0, new Value(0), _);
+    std::atomic_bool ready{false};
+
+    std::array<Key*, 30> inserted{};
+
+    auto w1 = [&tree, &ready, &inserted](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 30; ++i){
+        auto k = make_1layer_variable_key();
+        tree.put(*k, new Value(k->getCurrentSlice().slice) ,gc);
+        inserted[i] = k;
+      }
+    };
+
+    auto w2 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t i = 0; i < 30; ++i){
+        auto k = make_1layer_variable_key();
+        tree.remove(*k, gc);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready = true;
+    a.join();
+    b.join();
+
   }
 }

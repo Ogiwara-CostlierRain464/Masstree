@@ -584,25 +584,28 @@ public:
     // splitについて考える必要がなくなった。
     // また、nextのremoveについてもthisをlockする必要があるため、nextがdeletedになることについて考える必要は
     // ない。
-retry_prev_lock:
+retry_next_lock:
+    auto next_ = getNext();
+    if(next_ != nullptr){
+      next_->lock();
+      if(next_->getDeleted()){
+        next_->unlock();
+        goto retry_next_lock;
+      }
+    }
+retry_prev_cas:
     auto prev_ = getPrev();
+    if(next_ != nullptr){
+      next_->setPrev(prev_);
+    }
     if(prev_ != nullptr){
-      prev_->lock();
-      if(prev_->getDeleted() or prev_ != getPrev()){
-        prev_->unlock();
-        goto retry_prev_lock;
-      }else{
-        prev_->setNext(getNext());
-        if(getNext() != nullptr){
-          getNext()->setPrev(prev_);
-        }
-        // prev -> n の順にunlockすることに注意！
-        prev_->unlock();
+      auto cas = prev_->CASNext(this, next_);
+      if(!cas){
+        goto retry_prev_cas;
       }
-    }else {
-      if (getNext() != nullptr) {
-        getNext()->setPrev(nullptr);
-      }
+    }
+    if(next_ != nullptr){
+      next_->unlock();
     }
   }
 
@@ -754,6 +757,11 @@ retry_prev_lock:
     prev.store(prev_, std::memory_order_release);
   }
 
+  [[nodiscard]]
+  inline bool CASNext(BorderNode *expected, BorderNode *desired){
+    return next.compare_exchange_weak(expected, desired);
+  }
+
   inline KeySuffix& getKeySuffixes(){
     return key_suffixes;
   }
@@ -831,9 +839,11 @@ descend:
     return std::pair(reinterpret_cast<BorderNode *>(n), v);
   }
   auto interior_n = reinterpret_cast<InteriorNode *>(n);
+  // 当然、ここでconcurrent splitによってnの構造がグチャグチャになり、n1 == nullptrとなる可能性がある
   auto n1 = interior_n->findChild(key.getCurrentSlice().slice);
-  Version v1 = n1->stableVersion();
+  Version v1 = n1 != nullptr ? n1->stableVersion() : Version();
   if((n->getVersion() ^ v) <= Version::has_locked){
+    assert(n1 != nullptr);
     n = n1; v = v1; goto descend;
   }
   auto v2 = n->stableVersion();

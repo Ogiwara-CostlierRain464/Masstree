@@ -44,8 +44,11 @@ retry:
 
     // treeの変更以外は、論文中のアルゴリズムでrootの変更を検知できるので、やり直しの必要はない
     if(old_root != new_root){
-      auto cas_success = root.compare_exchange_weak(old_root, new_root);
-      assert(cas_success);
+      assert(old_root != nullptr);
+//      auto cas_success = root.compare_exchange_weak(old_root, new_root);
+//      assert(cas_success);
+      // treeの入れ違いではないので大丈夫。findBorderがrootまで戻ってくれる。
+      root.store(new_root, std::memory_order_release);
     }
   }
 

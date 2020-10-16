@@ -240,6 +240,10 @@ static size_t cut(size_t len){
  */
 static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index, std::optional<KeySlice> &k_prime){
   assert(!p->isNotFull());
+  assert(p->getLocked());
+  assert(p->getSplitting());
+  assert(p1->getLocked());
+  assert(p1->getSplitting());
 
   uint64_t temp_key_slice[Node::ORDER] = {};
   Node* temp_child[Node::ORDER + 1] = {};
@@ -480,6 +484,8 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
  */
 static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
   assert(p->isNotFull());
+  assert(p->getLocked());
+  assert(p->getInserting());
 
   // move to right
   for(size_t i = p->getNumKeys(); i > n_index; --i){
@@ -487,7 +493,7 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
     p->setKeySlice(i, p->getKeySlice(i - 1));
   }
   p->setChild(n_index + 1, n1);
-  p->setKeySlice(n_index, slice);
+  p->setKeySlice(n_index , slice);
   p->incNumKeys();
 }
 
@@ -513,12 +519,13 @@ static Node *split(Node *n, const Key &k, Value *value){
     reinterpret_cast<BorderNode *>(n1), k, value);
   std::optional<KeySlice> pull_up = std::nullopt;
 ascend:
+  assert(n->getLocked());
+  assert(n1->getLocked());
   InteriorNode *p = n->lockedParent();
   if(p == nullptr){
     auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     p = create_root_with_children(n, up, n1);
     n->unlock();
-    std::atomic_thread_fence(std::memory_order_acq_rel);
     n1->unlock();
     return p;
   }else if(p->isNotFull()){
@@ -605,10 +612,11 @@ forward:
 
     while (!v.deleted and next != nullptr){
       next->lock();
-      n->unlock(); // Hand-over-Hand locking
       if(k.getCurrentSlice().slice >= next->lowestKey()){
+        n->unlock(); // Hand-over-Hand locking
         n = next; v = n->getVersion(); next = n->getNext();
       }else{
+        next->unlock();
         break;
       }
     }
