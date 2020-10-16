@@ -584,28 +584,26 @@ public:
     // splitについて考える必要がなくなった。
     // また、nextのremoveについてもthisをlockする必要があるため、nextがdeletedになることについて考える必要は
     // ない。
-retry_next_lock:
-    auto next_ = getNext();
-    if(next_ != nullptr){
-      next_->lock();
-      if(next_->getDeleted()){
-        next_->unlock();
-        goto retry_next_lock;
-      }
-    }
-retry_prev_cas:
+retry_prev_lock:
     auto prev_ = getPrev();
-    if(next_ != nullptr){
-      next_->setPrev(prev_);
-    }
     if(prev_ != nullptr){
-      auto cas = prev_->CASNext(this, next_);
-      if(!cas){
-        goto retry_prev_cas;
+      prev_->lock();
+      if(prev_->getDeleted() or prev_ != getPrev()){
+        prev_->unlock();
+        goto retry_prev_lock;
+      }else{
+        auto next_ = getNext();
+        prev_->setNext(next_);
+        if(next_ != nullptr){
+          assert(!next_->getDeleted());
+          next_->setPrev(prev_);
+        }
+        prev_->unlock();
       }
-    }
-    if(next_ != nullptr){
-      next_->unlock();
+    }else{
+      if(getNext() != nullptr){
+        getNext()->setPrev(nullptr);
+      }
     }
   }
 

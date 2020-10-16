@@ -8,8 +8,14 @@ class Unit: public ::testing::Test{};
 
 
 
+TEST_F(Unit, binary){
+
+}
+
 TEST_F(Unit, init){
 }
+
+
 
 
 int main(int argc, char **argv){

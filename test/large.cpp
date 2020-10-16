@@ -491,7 +491,7 @@ TEST(LargeTest, multi_layer0_put_get){
 TEST(LargeTest, multi_layer0_put_remove){
   auto seed = time(nullptr);
   srand(seed);
-  for(size_t i = 0; i < 10000; ++i){
+  for(size_t i = 0; i < 1000; ++i){
 
     Masstree tree{};
     Key k0({0}, 1);
@@ -505,10 +505,10 @@ TEST(LargeTest, multi_layer0_put_remove){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
-      for(size_t i = 0; i < 30; ++i){
+      for(size_t j = 0; j < 100; ++j){
         auto k = make_1layer_variable_key();
         tree.put(*k, new Value(k->getCurrentSlice().slice) ,gc);
-        inserted[i] = k;
+        inserted[j] = k;
       }
     };
 
@@ -516,7 +516,7 @@ TEST(LargeTest, multi_layer0_put_remove){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
-      for(size_t i = 0; i < 30; ++i){
+      for(size_t j = 0; j < 100; ++j){
         auto k = make_1layer_variable_key();
         tree.remove(*k, gc);
       }

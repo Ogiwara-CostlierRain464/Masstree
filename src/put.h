@@ -577,6 +577,7 @@ static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, BorderNo
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
   n->lock();
+  v = n->getVersion();
   /**
    * putの場合はfindBorderでnをゲットしたら、すぐにlockをする
    * lockをする直前にそのnodeがdeletedになるかもしれないし、
@@ -586,8 +587,8 @@ retry:
    * この時、hand over hand lockingが必要となるであろう。
    */
 forward:
-  auto p = n->getPermutation();
   assert(n->getLocked());
+  auto p = n->getPermutation();
   if(v.deleted){
     n->unlock();
     if(v.is_root){
@@ -607,19 +608,13 @@ forward:
   auto index = std::get<2>(t_lv_i);
   if(Version::splitHappened(v, n->getVersion())){
     // findBorderとlockの間でsplit処理が起きたら
-    v = n->getVersion();
     auto next = n->getNext();
-
-    while (!v.deleted and next != nullptr){
-      next->lock();
-      if(k.getCurrentSlice().slice >= next->lowestKey()){
-        n->unlock(); // Hand-over-Hand locking
-        n = next; v = n->getVersion(); next = n->getNext();
-      }else{
-        next->unlock();
-        break;
-      }
+    n->unlock();
+    assert(next != nullptr); // splitが起きたのだから、Nextは必ずある
+    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
+      n = next; v = n->stableVersion(); next = n->getNext();
     }
+    n->lock();
     goto forward;
   }else if(t == NOTFOUND){
     // insertをする

@@ -129,11 +129,12 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     }
     p->decNumKeys();
 
+    // TODO: pを先にunlockしても良いのか検討
+    p->unlock();
     n->connectPrevAndNext();
     n->setDeleted(true);
     gc.add(n);
     n->unlock();
-    p->unlock();
   }else{
     assert(p->getNumKeys() == 1);
     auto pull_up_index = n_index == 1 ? 0 : 1;
@@ -146,13 +147,14 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         // is_rootをtrueにしてからparentをnullptrにする
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
-        n->connectPrevAndNext();
+        // TODO: pを先にunlockしても良いのか検討
         p->setDeleted(true);
-        n->setDeleted(true);
         gc.add(p);
+        p->unlock();
+        n->connectPrevAndNext();
+        n->setDeleted(true);
         gc.add(n);
         n->unlock();
-        p->unlock();
         return std::make_pair(NewRoot, pull_up_node);
       }else{
         // upper layerの更新
@@ -161,13 +163,14 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
         pull_up_node->setParent(nullptr);
         upper_layer->setLV(upper_index, LinkOrValue(pull_up_node));
 
-        n->connectPrevAndNext();
+        // TODO: pを先にunlockしても良いのか検討
         p->setDeleted(true);
-        n->setDeleted(true);
         gc.add(p);
+        p->unlock();
+        n->connectPrevAndNext();
+        n->setDeleted(true);
         gc.add(n);
         n->unlock();
-        p->unlock();
         return std::make_pair(NewRoot, pull_up_node);
       }
     }else{
@@ -177,14 +180,15 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       pp->setChild(p_index, pull_up_node);
       pull_up_node->setParent(pp);
 
-      n->connectPrevAndNext();
+      // TODO: pを先にunlockしても良いのか検討
+      pp->unlock();
       p->setDeleted(true);
-      n->setDeleted(true);
       gc.add(p);
+      p->unlock();
+      n->connectPrevAndNext();
+      n->setDeleted(true);
       gc.add(n);
       n->unlock();
-      p->unlock();
-      pp->unlock();
     }
   }
 
@@ -210,6 +214,7 @@ static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper
 retry:
   auto n_v = findBorder(root, k); auto n = n_v.first; auto v = n_v.second;
   n->lock();
+  v = n->getVersion();
   /**
    * removeの場合はfindBorderでnをゲットしたら、すぐにlockをする
    * findBorderとlockの間にそのnodeがdeletedになるかもしれないし、
@@ -235,19 +240,13 @@ forward:
   auto index = std::get<2>(t_lv_i);
   if(Version::splitHappened(v, n->getVersion())){
     // findBorderとlockの間でsplit処理が起きたら
-    v = n->getVersion();
     auto next = n->getNext();
-
-    while (!v.deleted and next != nullptr){
-      next->lock();
-      if(k.getCurrentSlice().slice >= next->lowestKey()){
-        n->unlock(); // Hand-over-Hand locking
-        n = next; v = n->getVersion(); next = n->getNext();
-      }else{
-        next->unlock();
-        break;
-      }
+    n->unlock();
+    assert(next != nullptr); // splitが起きたのだから、Nextは必ずある
+    while (!v.deleted and next != nullptr and k.getCurrentSlice().slice >= next->lowestKey()){
+      n = next; v = n->stableVersion(); next = n->getNext();
     }
+    n->lock();
     goto forward;
   }else if(t == NOTFOUND){
     // 何もしない?
