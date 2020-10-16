@@ -580,6 +580,8 @@ public:
    * このBorderNodeをdeleteする前に呼ばれる。
    */
   void connectPrevAndNext(){
+
+
     // TODO: CAS等でatomicに行う必要性がある。
     // prevをロックしてしまうと、それはdeadlockとなる。
     // おそらく、nextのロックだけで十分なはずである。

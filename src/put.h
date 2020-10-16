@@ -429,9 +429,12 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
   }
   n1->setPermutation(Permutation::fromSorted(Node::ORDER - split));
 
-  // TODO: 繋ぎ直しを並行性制御で対応できるように　
+  // nの次のNodeがdeleteされても、splitしても問題ないことに注意する。
+  // deleteされても、prevは現在このputの操作自体によってlockされて居るからその値は有効である。
+  // splitされた場合にも、当然そのprevは有効である。
   n1->setNext(n->getNext());
   n1->setPrev(n);
+  // この時点で、n1はnextをすでにつないで居る必要がある！
   n->setNext(n1);
   if(n1->getNext() != nullptr){
     n1->getNext()->setPrev(n1);
