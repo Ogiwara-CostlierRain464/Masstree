@@ -580,23 +580,30 @@ public:
    * このBorderNodeをdeleteする前に呼ばれる。
    */
   void connectPrevAndNext(){
-
-
-    // TODO: CAS等でatomicに行う必要性がある。
-    // prevをロックしてしまうと、それはdeadlockとなる。
-    // おそらく、nextのロックだけで十分なはずである。
-    auto next_ = getNext();
+    // prevをlockすることにより、Masstreeはsplit "to the right"の制約があるため、
+    // splitについて考える必要がなくなった。
+    // また、nextのremoveについてもthisをlockする必要があるため、nextがdeletedになることについて考える必要は
+    // ない。
+retry_prev_lock:
     auto prev_ = getPrev();
-
-    if(next_ != nullptr){
-      next_->setPrev(prev_);
-    }
     if(prev_ != nullptr){
-      prev_->setNext(next_);
+      prev_->lock();
+      if(prev_->getDeleted() or prev_ != getPrev()){
+        prev_->unlock();
+        goto retry_prev_lock;
+      }else{
+        prev_->setNext(getNext());
+        if(getNext() != nullptr){
+          getNext()->setPrev(prev_);
+        }
+        // prev -> n の順にunlockすることに注意！
+        prev_->unlock();
+      }
+    }else {
+      if (getNext() != nullptr) {
+        getNext()->setPrev(nullptr);
+      }
     }
-
-    setNext(nullptr);
-    setPrev(nullptr);
   }
 
   /**
