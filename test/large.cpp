@@ -491,7 +491,7 @@ TEST(LargeTest, multi_layer0_put_get){
 TEST(LargeTest, multi_layer0_put_remove){
   auto seed = time(nullptr);
   srand(seed);
-  for(size_t i = 0; i < 1000; ++i){
+  for(size_t i = 0; i < 5000; ++i){
 
     Masstree tree{};
     Key k0({0}, 1);
@@ -499,16 +499,13 @@ TEST(LargeTest, multi_layer0_put_remove){
     tree.put(k0, new Value(0), _);
     std::atomic_bool ready{false};
 
-    std::array<Key*, 30> inserted{};
-
-    auto w1 = [&tree, &ready, &inserted](){
+    auto w1 = [&tree, &ready](){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
       for(size_t j = 0; j < 100; ++j){
         auto k = make_1layer_variable_key();
         tree.put(*k, new Value(k->getCurrentSlice().slice) ,gc);
-        inserted[j] = k;
       }
     };
 
