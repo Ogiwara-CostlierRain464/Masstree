@@ -321,6 +321,9 @@ TEST(RemoveTest, new_root){
   GC gc{};
 
   upper_node->setLV(upper_index, LinkOrValue(a));
+  upper_node->lock();
+  a->setUpperLayer(upper_node);
+  upper_node->unlock();
   a->setKeySlice(0, 25);
   a->setChild(0, b);
   a->setChild(1, c);
@@ -428,16 +431,22 @@ TEST(RemoveTest, remove_all_layer){
   a->setIsRoot(true);
   a->setLV(0, LinkOrValue(b));
 
+  a->lock();
+  b->setUpperLayer(a); a->unlock();
   b->setKeyLen(0, BorderNode::key_len_layer);
   b->setKeySlice(0, TWO);
   b->setIsRoot(true);
   b->setLV(0, LinkOrValue(c));
 
+  b->lock();
+  c->setUpperLayer(b); b->unlock();
   c->setKeyLen(0, BorderNode::key_len_layer);
   c->setKeySlice(0, THREE);
   c->setIsRoot(true);
   c->setLV(0, LinkOrValue(d));
 
+  c->lock();
+  d->setUpperLayer(c); c->unlock();
   d->setKeyLen(0, 8);
   d->setKeySlice(0, FOUR);
   d->setIsRoot(true);
@@ -464,11 +473,13 @@ TEST(RemoveTest, remove_all_layer2){
   a->setIsRoot(true);
   a->setLV(0, LinkOrValue(b));
 
+  a->lock(); b->setUpperLayer(a); a->unlock();
   b->setKeyLen(0, BorderNode::key_len_layer);
   b->setKeySlice(0, TWO);
   b->setIsRoot(true);
   b->setLV(0, LinkOrValue(c));
 
+  b->lock(); c->setUpperLayer(b); b->unlock();
   c->setIsRoot(true);
   c->setKeyLen(0, BorderNode::key_len_layer);
   c->setKeySlice(0, THREE);
@@ -478,6 +489,7 @@ TEST(RemoveTest, remove_all_layer2){
   c->setLV(1, LinkOrValue(new Value(8)));
   c->setPermutation(Permutation::fromSorted(2));
 
+  c->lock(); d->setUpperLayer(c); c->unlock();
   d->setKeyLen(0, 8);
   d->setKeySlice(0, FOUR);
   d->setIsRoot(true);
@@ -553,6 +565,8 @@ TEST(RemoveTest, handle_delete_layer_in_remove){
   upper->setKeyLen(upper_index, BorderNode::key_len_layer);
   upper->setKeySlice(upper_index, ONE);
   upper->setLV(upper_index, LinkOrValue(n));
+  upper->lock(); n->setUpperLayer(upper); upper->unlock();
+
 
   Value v(1);
   n->setKeyLen(1, BorderNode::key_len_has_suffix);

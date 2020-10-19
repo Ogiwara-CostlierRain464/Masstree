@@ -334,7 +334,7 @@ TEST(LargeTest, DISABLED_multi_put_remove_remove_layer0_test){
 
 
 
-TEST(LargeTest, multi_new_layer_put_get){
+TEST(LargeTest, DISABLED_multi_new_layer_put_get){
   auto seed = time(nullptr); // UNSTABLE errorが出るseed
   srand(seed);
 
@@ -370,7 +370,7 @@ TEST(LargeTest, multi_new_layer_put_get){
   }
 }
 
-TEST(LargeTest, multi_new_layer_put_remove){
+TEST(LargeTest, DISABLED_multi_new_layer_put_remove){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -410,7 +410,7 @@ TEST(LargeTest, multi_new_layer_put_remove){
   }
 }
 
-TEST(LargeTest, multi_new_layer_put_remove_get){
+TEST(LargeTest, DISABLED_multi_new_layer_put_remove_get){
   auto seed = time(nullptr);
   srand(seed);
 
@@ -462,7 +462,7 @@ TEST(LargeTest, multi_new_layer_put_remove_get){
   }
 }
 
-TEST(LargeTest, multi_layer0_put_get){
+TEST(LargeTest, DISABLED_multi_layer0_put_get){
   for(size_t i = 0; i < 10000; ++i){
 
     Masstree tree{};
@@ -499,7 +499,7 @@ TEST(LargeTest, multi_layer0_put_get){
   }
 }
 
-TEST(LargeTest, multi_layer0_put_remove){
+TEST(LargeTest, DISABLED_multi_layer0_put_remove){
   auto seed = time(nullptr);
   srand(seed);
   for(size_t i = 0; i < 5000; ++i){
@@ -552,7 +552,7 @@ TEST(LargeTest, multi_layer0_put_remove){
   }
 }
 
-TEST(LargeTest, multi_layer0_put_put){
+TEST(LargeTest, DISABLED_multi_layer0_put_put){
   auto seed = time(nullptr);
   srand(seed);
   for(size_t i = 0; i < 5000; ++i){
@@ -605,7 +605,7 @@ TEST(LargeTest, multi_layer0_put_put){
   }
 }
 
-TEST(LargeTest, multi_layer0_remove_remove){
+TEST(LargeTest, DISABLED_multi_layer0_remove_remove){
   auto seed = time(nullptr);
   srand(seed);
   for(size_t i = 0; i < 5000; ++i){
@@ -658,7 +658,7 @@ TEST(LargeTest, multi_layer0_remove_remove){
   }
 }
 
-TEST(LargeTest, layer0_put){
+TEST(LargeTest, DISABLED_layer0_put){
   auto seed = time(nullptr);
   srand(seed);
   for(size_t i = 0; i < 5000; ++i){
@@ -690,7 +690,7 @@ TEST(LargeTest, layer0_put){
   }
 }
 
-TEST(LargeTest, LUNATIC){
+TEST(LargeTest, DISABLED_LUNATIC){
   auto seed = time(nullptr);
   srand(seed);
   for(size_t i = 0; i < 10000; ++i){
