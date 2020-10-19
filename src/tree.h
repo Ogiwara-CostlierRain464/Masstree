@@ -202,6 +202,8 @@ public:
 private:
   std::atomic<Version> version = {};
   std::atomic<InteriorNode*> parent = nullptr;
+  // 上のlayerのBorderNodeを指す。
+  std::atomic<BorderNode*> upperLayer = nullptr;
 };
 
 class InteriorNode: public Node{

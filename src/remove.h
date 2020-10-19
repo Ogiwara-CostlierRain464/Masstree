@@ -281,13 +281,6 @@ forward:
      * NOTE: どのケースにおいても、先に親としてのinteriorに先に
      * ロックをかける必要がありそうだ
      */
-
-    // lockを取ってからextractLinkを行ったので、これは実行されない。
-//    if(n->isKeyRemoved(index)){
-//      n->unlock();
-//      return std::make_pair(NotChange, root);
-//    }
-
     auto p = n->getPermutation();
     if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
