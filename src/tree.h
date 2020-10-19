@@ -127,10 +127,8 @@ public:
     if(p != nullptr){
       assert(reinterpret_cast<Node *>(p)->isLocked());
     }
-
+    upperLayer.store(p, WRITE_MEMORY_ORDER);
   }
-
-
 
   inline void setIsBorder(bool is_border){
     auto v = getVersion();
