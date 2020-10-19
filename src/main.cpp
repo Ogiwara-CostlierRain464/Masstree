@@ -7,7 +7,7 @@ using namespace masstree;
 
 Key *make_some_key(){
   std::vector<KeySlice> vec{};
-  size_t slices_len = (rand() % 10) + 1;
+  size_t slices_len = (rand() % 5) + 1;
   for(size_t i = 1; i <= slices_len; ++i){
     auto slice = rand() % 50;
     vec.push_back(slice);
@@ -19,7 +19,7 @@ Key *make_some_key(){
 int main(){
   auto seed = time(nullptr);
   srand(seed);
-  for(size_t i = 0; i < 10000; ++i){
+  for(size_t i = 0; i < 100; ++i){
 
     Masstree tree{};
     Key k0({0}, 1);
@@ -27,7 +27,7 @@ int main(){
     tree.put(k0, new Value(0), _);
     std::atomic_bool ready{false};
 
-    constexpr size_t COUNT = 100;
+    constexpr size_t COUNT = 1000;
 
     std::array<Key*, COUNT * 2> inserts{};
 

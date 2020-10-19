@@ -503,6 +503,10 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
   auto upper = left->lockedUpperNode();
   root->setIsRoot(true);
   root->setUpperLayer(upper);
+  if(upper != nullptr){
+    auto left_index = upper->findNextLayerIndex(left);
+    upper->setLV(left_index, LinkOrValue(root));
+  }
   root->setNumKeys(1);
   root->setKeySlice(0, slice);
   root->setChild(0, left);
