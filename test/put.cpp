@@ -272,6 +272,9 @@ TEST(PutTest, split_keys_among2){
   n->setSplitting(true);
   n->setPermutation(Permutation::fromSorted(15));
 
+  n1->lock();
+  n1->setSplitting(true);
+
   Key k({112, AB}, 2);
   split_keys_among(n, n1, k, &i);
   EXPECT_EQ(n->getKeyLen(8), 9);
@@ -282,6 +285,8 @@ TEST(PutTest, split_keys_among2){
   unsorted->lock();
   unsorted->setSplitting(true);
   auto n2 = new BorderNode;
+  n2->lock();
+  n2->setSplitting(true);
   Key k2({ONE}, 8);
   split_keys_among(unsorted, n2, k2, &i);
   EXPECT_EQ(unsorted->getKeyLen(7), 7);
