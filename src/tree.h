@@ -20,6 +20,9 @@
 #include <atomic>
 #include <mutex>
 
+static constexpr std::memory_order READ_MEMORY_ORDER = std::memory_order_seq_cst;
+static constexpr std::memory_order WRITE_MEMORY_ORDER = std::memory_order_seq_cst;
+
 namespace masstree{
 
 struct InteriorNode;
@@ -66,6 +69,7 @@ public:
   void unlock(){
     auto copy_v = getVersion();
     assert(copy_v.locked);
+    assert(!(copy_v.inserting and copy_v.splitting));
     if(copy_v.inserting){
       ++copy_v.v_insert;
     }else if(copy_v.splitting){
@@ -85,11 +89,10 @@ public:
     if(p != nullptr){
       p->lock();
     }
+    // parent changed underneath us
     if(p != reinterpret_cast<Node *>(getParent())){
       assert(p != nullptr);
-      if(p != nullptr){
-        p->unlock();
-      }
+      p->unlock();
       goto retry;
     }
     return reinterpret_cast<InteriorNode *>(p);
@@ -97,15 +100,20 @@ public:
 
   [[nodiscard]]
   inline InteriorNode* getParent() const{
-    return parent.load(std::memory_order_acquire);
+    return parent.load(READ_MEMORY_ORDER);
   }
 
   inline void setVersion(Version const &v) {
-    version.store(v, std::memory_order_release);
+    version.store(v, WRITE_MEMORY_ORDER);
   }
 
-  inline void setParent(InteriorNode* const &p) {
-    parent.store(p, std::memory_order_release);
+  inline void setParent(InteriorNode* p) {
+    // setParentをする時には、その親はlockされていなければならない。
+    // 逆に、このNode自身はlockされている必要がない。
+    if(p != nullptr){
+      assert(reinterpret_cast<Node*>(p)->getLocked());
+    }
+    parent.store(p, WRITE_MEMORY_ORDER);
   }
 
   inline void setIsBorder(bool is_border){
@@ -134,7 +142,7 @@ public:
 
   [[nodiscard]]
   inline Version getVersion() const{
-    return version.load(std::memory_order_acquire);
+    return version.load(READ_MEMORY_ORDER);
   }
 
   [[nodiscard]]
@@ -160,6 +168,7 @@ public:
 
   inline void setSplitting(bool splitting){
     auto v = getVersion();
+    assert(v.locked);
     v.splitting = splitting;
     setVersion(v);
   }
@@ -172,6 +181,7 @@ public:
 
   inline void setInserting(bool inserting){
     auto v = getVersion();
+    assert(v.locked);
     v.inserting = inserting;
     setVersion(v);
   }
@@ -197,18 +207,38 @@ private:
 class InteriorNode: public Node{
 public:
   Node *findChild(KeySlice slice){
-    for(size_t i = 0; i < getNumKeys(); ++i){
+    auto num_keys = getNumKeys();
+    for(size_t i = 0; i < num_keys; ++i){
       if(slice < key_slice[i]){
         return getChild(i);
       }
     }
 
-    return getChild(getNumKeys());
+    return getChild(num_keys);
   }
 
   [[nodiscard]]
-  bool isNotFull() const{
+  inline bool isNotFull() const{
     return getNumKeys() != ORDER - 1;
+  }
+
+  [[nodiscard]]
+  inline bool isFull() const{
+    return !isNotFull();
+  }
+
+  /**
+   * Interior Nodeのkey sliceにスキップがあるか
+   * @return
+   */
+  bool debug_has_skip() const{
+    for(size_t i = 1; i < ORDER - 2; ++i){
+      auto now = getKeySlice(i);
+      if(getKeySlice(i-1) and now == 0 and getKeySlice(i+1) != 0){
+        return true;
+      }
+    }
+    return false;
   }
 
   void printNode() const{
@@ -225,16 +255,17 @@ public:
            && getChild(index) != a_child){
       ++index;
     }
+    assert(getChild(index) == a_child);
     return index;
   }
 
   [[nodiscard]]
   inline uint8_t getNumKeys() const {
-    return n_keys.load(std::memory_order_acquire);
+    return n_keys.load(READ_MEMORY_ORDER);
   }
 
-  inline void setNumKeys(const uint8_t &nKeys) {
-    n_keys.store(nKeys, std::memory_order_release);
+  inline void setNumKeys(uint8_t nKeys) {
+    n_keys.store(nKeys, WRITE_MEMORY_ORDER);
   }
 
   inline void incNumKeys(){
@@ -247,7 +278,7 @@ public:
 
   [[nodiscard]]
   inline KeySlice getKeySlice(size_t index) const {
-    return key_slice[index].load(std::memory_order_acquire);
+    return key_slice[index].load(READ_MEMORY_ORDER);
   }
 
   void resetKeySlices(){
@@ -257,17 +288,32 @@ public:
   }
 
   inline void setKeySlice(size_t index, const KeySlice &slice) {
-    key_slice[index].store(slice, std::memory_order_release);
+    key_slice[index].store(slice, WRITE_MEMORY_ORDER);
   }
 
   [[nodiscard]]
   inline Node *getChild(size_t index) const {
-    return child[index].load(std::memory_order_acquire);
+    return child[index].load(READ_MEMORY_ORDER);
   }
 
-  inline void setChild(size_t index, Node* const &c) {
-    child[index].store(c, std::memory_order_release);
+  inline void setChild(size_t index, Node* c) {
+    assert(0 <= index and index <= 15);
+    child[index].store(c, WRITE_MEMORY_ORDER);
   }
+
+  /**
+   * Interior Nodeがcを含んでいるか確認
+   * @param c
+   * @return
+   */
+  bool debug_contain_child(Node* c) const{
+    for(size_t i = 0; i < ORDER; ++i){
+      if(getChild(i) == c)
+        return true;
+    }
+    return false;
+  }
+
 
   void resetChildren(){
     for(size_t i = 0; i < ORDER; ++i){
@@ -423,7 +469,7 @@ public:
    * @param from
    */
   void set(size_t i, const Key &key, size_t from){
-    suffixes[i].store(BigSuffix::from(key, from), std::memory_order_release);
+    suffixes[i].store(BigSuffix::from(key, from), WRITE_MEMORY_ORDER);
   }
 
   /**
@@ -433,12 +479,12 @@ public:
    * @param ptr
    */
   inline void set(size_t i, BigSuffix* const &ptr){
-    suffixes[i].store(ptr, std::memory_order_release);
+    suffixes[i].store(ptr, WRITE_MEMORY_ORDER);
   }
 
   [[nodiscard]]
   inline BigSuffix* get(size_t i) const{
-    return suffixes[i].load(std::memory_order_acquire);
+    return suffixes[i].load(READ_MEMORY_ORDER);
   }
 
   /**
@@ -579,7 +625,7 @@ public:
   /**
    * このBorderNodeをdeleteする前に呼ばれる。
    */
-  void connectPrevAndNext(){
+  void connectPrevAndNext() const{
     // prevをlockすることにより、Masstreeはsplit "to the right"の制約があるため、
     // splitについて考える必要がなくなった。
     // また、nextのremoveについてもthisをlockする必要があるため、nextがdeletedになることについて考える必要は
@@ -694,11 +740,11 @@ retry_prev_lock:
 
   [[nodiscard]]
   inline uint8_t getKeyLen(size_t i) const{
-    return key_len[i].load(std::memory_order_acquire);
+    return key_len[i].load(READ_MEMORY_ORDER);
   }
 
   inline void setKeyLen(size_t i, const uint8_t &len){
-    key_len[i].store(len, std::memory_order_release);
+    key_len[i].store(len, WRITE_MEMORY_ORDER);
   }
 
   void resetKeyLen(){
@@ -709,11 +755,11 @@ retry_prev_lock:
 
   [[nodiscard]]
   inline KeySlice getKeySlice(size_t i) const{
-    return key_slice[i].load(std::memory_order_acquire);
+    return key_slice[i].load(READ_MEMORY_ORDER);
   }
 
   inline void setKeySlice(size_t i, const KeySlice &slice){
-    key_slice[i].store(slice, std::memory_order_release);
+    key_slice[i].store(slice, WRITE_MEMORY_ORDER);
   }
 
   void resetKeySlice(){
@@ -724,11 +770,11 @@ retry_prev_lock:
 
   [[nodiscard]]
   inline LinkOrValue getLV(size_t i) const{
-    return lv[i].load(std::memory_order_acquire);
+    return lv[i].load(READ_MEMORY_ORDER);
   }
 
   inline void setLV(size_t i, const LinkOrValue& lv_){
-    lv[i].store(lv_, std::memory_order_release);
+    lv[i].store(lv_, WRITE_MEMORY_ORDER);
   }
 
   void resetLVs(){
@@ -739,20 +785,20 @@ retry_prev_lock:
 
   [[nodiscard]]
   inline BorderNode* getNext() const{
-    return next.load(std::memory_order_acquire);
+    return next.load(READ_MEMORY_ORDER);
   }
 
   inline void setNext(BorderNode* next_){
-    next.store(next_, std::memory_order_release);
+    next.store(next_, WRITE_MEMORY_ORDER);
   }
 
   [[nodiscard]]
   inline BorderNode* getPrev() const{
-    return prev.load(std::memory_order_acquire);
+    return prev.load(READ_MEMORY_ORDER);
   }
 
   inline void setPrev(BorderNode* prev_){
-    prev.store(prev_, std::memory_order_release);
+    prev.store(prev_, WRITE_MEMORY_ORDER);
   }
 
   [[nodiscard]]
@@ -771,11 +817,11 @@ retry_prev_lock:
 
   [[nodiscard]]
   inline Permutation getPermutation() const{
-    return permutation.load(std::memory_order_acquire);
+    return permutation.load(READ_MEMORY_ORDER);
   }
 
   inline void setPermutation(const Permutation &p){
-    permutation.store(p, std::memory_order_release);
+    permutation.store(p, WRITE_MEMORY_ORDER);
   }
 
   ~BorderNode(){

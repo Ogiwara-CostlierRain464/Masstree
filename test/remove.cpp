@@ -63,11 +63,13 @@ TEST(RemoveTest, left_most_1){
   d->setKeySlice(1, 20);
   d->setPermutation(Permutation::fromSorted(2));
 
+  b->lock(); a->lock();
   d->setParent(b);
   d->setPrev(c);
   c->setParent(b);
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({14}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
@@ -102,6 +104,7 @@ TEST(RemoveTest, left_most_2){
   e->setKeyLen(0, 1);
   e->setKeySlice(0, 14);
 
+  b->lock(); a->lock();
   e->setParent(b);
   e->setPrev(d);
   d->setParent(b);
@@ -110,6 +113,7 @@ TEST(RemoveTest, left_most_2){
   c->setParent(b);
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({12}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
@@ -139,11 +143,13 @@ TEST(RemoveTest, right_most){
   d->setKeyLen(0, 1);
   d->setKeySlice(0, 22);
 
+  b->lock(); a->lock();
   d->setParent(b);
   d->setPrev(c);
   c->setParent(b);
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({22}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
@@ -181,6 +187,7 @@ TEST(RemoveTest, right_most_2){
   e->setKeyLen(0, 1);
   e->setKeySlice(0, 24);
 
+  b->lock(); a->lock();
   e->setParent(b);
   e->setPrev(d);
   d->setParent(b);
@@ -189,6 +196,7 @@ TEST(RemoveTest, right_most_2){
   c->setParent(b);
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({24}, 1);
   remove(a, k, nullptr, 0, gc);
@@ -220,11 +228,13 @@ TEST(RemoveTest, middle1){
   d->setKeyLen(0, 1);
   d->setKeySlice(0, 15);
 
+  b->lock(); a->lock();
   d->setParent(b);
   d->setPrev(c);
   c->setParent(b) ;
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({15}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
@@ -270,6 +280,7 @@ TEST(RemoveTest, middle2){
   g->setKeyLen(0, 1);
   g->setKeySlice(0, 24);
 
+  b->lock(); a->lock();
   g->setParent(b);
   g->setPrev(f);
   f->setParent(b);
@@ -284,6 +295,7 @@ TEST(RemoveTest, middle2){
   c->setParent(b);
   c->setNext(d);
   b->setParent(a);
+  b->unlock(); a->unlock();
 
   Key k({22}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);
@@ -329,6 +341,7 @@ TEST(RemoveTest, new_root){
   f->setKeyLen(0, 1);
   f->setKeySlice(0, 78);
 
+  c->lock(); a->lock();
   f->setParent(c);
   f->setPrev(e);
   e->setParent(c);
@@ -341,6 +354,7 @@ TEST(RemoveTest, new_root){
   b->setNext(d);
   c->setParent(a);
   b->setParent(a);
+  c->unlock(); a->unlock();
 
   Key k({9}, 1);
   auto pair = remove(a, k, upper_node, upper_index, gc);
@@ -370,10 +384,12 @@ TEST(RemoveTest, remove_layer_1){
   c->setKeyLen(0, 1);
   c->setKeySlice(0, 10);
 
+  a->lock();
   c->setParent(a);
   c->setPrev(b) ;
   b->setParent(a);
   b->setNext(c);
+  a->unlock();
 
   Key k({9}, 1);
   auto pair = remove(a, k, upper_b, 0, gc);
@@ -496,10 +512,12 @@ TEST(RemoveTest, at_layer0_1){
   c->setKeyLen(0, 1);
   c->setKeySlice(0, 10);
 
+  a->lock();
   c->setParent(a);
   c->setPrev(b);
   b->setParent(a);
   b->setNext(c);
+  a->unlock();
 
   Key k({9}, 1);
   auto pair = remove(a, k, nullptr, 0, gc);

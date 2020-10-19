@@ -262,27 +262,35 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
   // clean
   // InteriorNodeの場合はn_keysを0にするだけで十分だが
   // 予期せぬバグを防ぐためにクリーンにしておく。
+  p->setNumKeys(0);
   p->resetKeySlices();
   p->resetChildren();
-  p->setNumKeys(0);
   size_t split = cut(Node::ORDER);
   size_t i, j;
   for(i = 0; i < split - 1; ++i){
     p->setChild(i, temp_child[i]);
+    p->getChild(i)->setParent(p);
     p->setKeySlice(i, temp_key_slice[i]);
     p->incNumKeys();
   }
   p->setChild(i, temp_child[i]);
+  temp_child[i]->setParent(p);
   k_prime = temp_key_slice[split - 1];
   for(++i, j = 0; i < Node::ORDER; ++i, ++j){
     p1->setChild(j, temp_child[i]);
+    p1->getChild(j)->setParent(p1);
     p1->setKeySlice(j, temp_key_slice[i]);
     p1->incNumKeys();
   }
   p1->setChild(j, temp_child[i]);
-  p1->setParent(p->getParent());
-  for(i = 0; i <= p1->getNumKeys(); ++i){
-    p1->getChild(i)->setParent(p1);
+  temp_child[i]->setParent(p1);
+
+  // pの親はlockされていない。よってこの段階でのsetParentは不正である。
+  //  p1->setParent(p->getParent());
+
+
+  for(auto &n: temp_child){
+    assert(n->getParent()->debug_contain_child(n));
   }
 }
 
@@ -443,7 +451,22 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
   if(n1->getNext() != nullptr){
     n1->getNext()->setPrev(n1);
   }
-  n1->setParent(n->getParent());
+
+  /**
+   * NOTE: Split発生時点のこの段階で、n1の親ポインタがセットされる。
+   * しかし、次のような状況を考えてみよう。
+   *
+   *       T1                T2
+   * p = n->getParent()
+   *                    nの親がsplitする
+   *                    nの親が変わる
+   *                    T1のpが無効な値になる
+   *  n1の親に無効な値を
+   *  入れる
+   *
+   * pはこの時点ではまだlockされていないことに注意しよう。
+   */
+//  n1->setParent(n->getParent());
 }
 
 
@@ -458,10 +481,14 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
 static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node *right){
   assert(left->getIsRoot());
   assert(left->getParent() == nullptr);
+  assert(right->getParent() == nullptr);
+  assert(left->getLocked());
+  assert(right->getLocked());
   auto root = new InteriorNode{};
 #ifndef NDEBUG
   Alloc::incInterior();
 #endif
+  root->lock(); // 通常はlockする必要はないが、setParentの便宜上
   root->setIsRoot(true);
   root->setNumKeys(1);
   root->setKeySlice(0, slice);
@@ -472,6 +499,7 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
   right->setParent(root);
   left->setIsRoot(false);
   right->setIsRoot(false);
+  root->unlock();
   return root;
 }
 
@@ -486,6 +514,7 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
   assert(p->isNotFull());
   assert(p->getLocked());
   assert(p->getInserting());
+  assert(n1->getLocked());
 
   // move to right
   for(size_t i = p->getNumKeys(); i > n_index; --i){
@@ -495,6 +524,10 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
   p->setChild(n_index + 1, n1);
   p->setKeySlice(n_index , slice);
   p->incNumKeys();
+
+  // pがlockされたこの段階で、setParentを行う必要がある。
+  n1->setParent(p);
+  assert(!p->debug_has_skip());
 }
 
 /**
@@ -522,6 +555,10 @@ ascend:
   assert(n->getLocked());
   assert(n1->getLocked());
   InteriorNode *p = n->lockedParent();
+  if(p != nullptr)
+    assert( p->debug_contain_child(n));
+  // 親が変わっているのに、それに気がつけない！
+  // というより、正しく更新されていない。
   if(p == nullptr){
     auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     p = create_root_with_children(n, up, n1);
@@ -539,6 +576,7 @@ ascend:
     p->unlock();
     return nullptr;
   }else{ // pはfull
+    assert(p->isFull());
     p->setSplitting(true);
     size_t n_index = p->findChildIndex(n);
     n->unlock();
@@ -551,7 +589,10 @@ ascend:
     split_keys_among(
       reinterpret_cast<InteriorNode *>(p),
       reinterpret_cast<InteriorNode *>(p1), up, n1, n_index, pull_up);
-    n1->unlock(); n = p; n1 = p1; goto ascend;
+    n1->unlock();
+    assert(n->getParent()->debug_contain_child(n));
+    assert(n1->getParent()->debug_contain_child(n1));
+    n = p; n1 = p1; goto ascend;
   }
 }
 

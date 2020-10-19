@@ -21,7 +21,7 @@ Key *make_1layer_key(){
 }
 
 Key *make_1layer_variable_key(){
-  KeySlice slice = rand() % 1000;
+  KeySlice slice = rand() % 100 + 1;
   auto size = (rand() % 8) + 1;
   return new Key({slice}, size);
 }
@@ -80,7 +80,7 @@ TEST(LargeTest, DISABLED_put_get_remove){
   auto seed = time(nullptr);
   srand(seed);
 
-  constexpr size_t COUNT = 10000;
+  constexpr size_t COUNT = 50000;
   GC gc{};
 
 
@@ -499,13 +499,18 @@ TEST(LargeTest, multi_layer0_put_remove){
     tree.put(k0, new Value(0), _);
     std::atomic_bool ready{false};
 
-    auto w1 = [&tree, &ready](){
+    constexpr size_t COUNT = 100;
+
+    std::array<Key*, COUNT> inserts{};
+
+    auto w1 = [&tree, &ready, &inserts](){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
-      for(size_t j = 0; j < 100; ++j){
+      for(size_t j = 0; j < COUNT; ++j){
         auto k = make_1layer_variable_key();
-        tree.put(*k, new Value(k->getCurrentSlice().slice) ,gc);
+        tree.put(*k, new Value(k->lastSliceSize) ,gc);
+        inserts[j] = k;
       }
     };
 
@@ -513,7 +518,7 @@ TEST(LargeTest, multi_layer0_put_remove){
       while (!ready){ _mm_pause(); }
 
       GC gc{};
-      for(size_t j = 0; j < 100; ++j){
+      for(size_t j = 0; j < COUNT; ++j){
         auto k = make_1layer_variable_key();
         tree.remove(*k, gc);
       }
@@ -524,6 +529,152 @@ TEST(LargeTest, multi_layer0_put_remove){
     ready = true;
     a.join();
     b.join();
+
+    for(size_t j = 0; j < COUNT; ++j){
+      auto k = inserts[j];
+      auto p = tree.get(*k);
+      if(p != nullptr){
+        ASSERT_EQ(p->getBody(), k->lastSliceSize);
+      }
+    }
+
+  }
+}
+
+TEST(LargeTest, multi_layer0_put_put){
+  auto seed = time(nullptr);
+  srand(seed);
+  for(size_t i = 0; i < 5000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC _{};
+    tree.put(k0, new Value(0), _);
+    std::atomic_bool ready{false};
+
+    constexpr size_t COUNT = 100;
+
+    std::array<Key*, COUNT> inserts{};
+
+    auto w1 = [&tree, &ready, &inserts](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t j = 0; j < COUNT; ++j){
+        auto k = make_1layer_variable_key();
+        tree.put(*k, new Value(k->lastSliceSize) ,gc);
+        inserts[j] = k;
+      }
+    };
+
+    auto w2 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t j = 0; j < COUNT; ++j){
+        auto k = make_1layer_variable_key();
+        tree.put(*k, new Value(k->lastSliceSize) ,gc);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready = true;
+    a.join();
+    b.join();
+
+    for(size_t j = 0; j < COUNT; ++j){
+      auto k = inserts[j];
+      auto p = tree.get(*k);
+      if(p != nullptr){
+        ASSERT_EQ(p->getBody(), k->lastSliceSize);
+      }
+    }
+
+  }
+}
+
+TEST(LargeTest, DISABLED_multi_layer0_remove_remove){
+  auto seed = time(nullptr);
+  srand(seed);
+  for(size_t i = 0; i < 5000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC _{};
+    tree.put(k0, new Value(0), _);
+    std::atomic_bool ready{false};
+
+    constexpr size_t COUNT = 100;
+
+    std::array<Key*, COUNT> inserts{};
+
+    auto w1 = [&tree, &ready, &inserts](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t j = 0; j < COUNT; ++j){
+        auto k = make_1layer_variable_key();
+        tree.put(*k, new Value(k->lastSliceSize) ,gc);
+        inserts[j] = k;
+      }
+    };
+
+    auto w2 = [&tree, &ready](){
+      while (!ready){ _mm_pause(); }
+
+      GC gc{};
+      for(size_t j = 0; j < COUNT; ++j){
+        auto k = make_1layer_variable_key();
+        tree.put(*k, new Value(k->lastSliceSize) ,gc);
+      }
+    };
+
+    std::thread a(w1);
+    std::thread b(w2);
+    ready = true;
+    a.join();
+    b.join();
+
+    for(size_t j = 0; j < COUNT; ++j){
+      auto k = inserts[j];
+      auto p = tree.get(*k);
+      if(p != nullptr){
+        ASSERT_EQ(p->getBody(), k->lastSliceSize);
+      }
+    }
+
+  }
+}
+
+TEST(LargeTest, DISABLED_layer0_put){
+  auto seed = time(nullptr);
+  srand(seed);
+  for(size_t i = 0; i < 5000; ++i){
+
+    Masstree tree{};
+    Key k0({0}, 1);
+    GC gc{};
+    tree.put(k0, new Value(0), gc);
+    std::atomic_bool ready{false};
+
+    constexpr size_t COUNT = 200;
+
+    std::array<Key*, COUNT> inserts{};
+
+    for(size_t j = 0; j < COUNT; ++j){
+      auto k = make_1layer_variable_key();
+      tree.put(*k, new Value(k->lastSliceSize), gc);
+      inserts[j] = k;
+    }
+
+    for(size_t j = 0; j < COUNT; ++j){
+      auto k = inserts[j];
+      auto p = tree.get(*k);
+      if(p != nullptr){
+        ASSERT_EQ(p->getBody(), k->lastSliceSize);
+      }
+    }
 
   }
 }

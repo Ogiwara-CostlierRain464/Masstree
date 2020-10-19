@@ -86,6 +86,7 @@ static Node *sample4(){
   _9->setKeyLen(0, 1);
   _9->setKeySlice(0, 0x09);
   _9->setLV(0, LinkOrValue(new Value(18)));
+  root->lock();
   _9->setParent(root);
 
   _11->setKeyLen(0, 2);
@@ -97,7 +98,7 @@ static Node *sample4(){
   _160->setKeySlice(0, 0x010600);
   _160->setLV(0, LinkOrValue(new Value(320)));
   _160->setParent(root);
-
+  root->unlock();
   return root;
 }
 
