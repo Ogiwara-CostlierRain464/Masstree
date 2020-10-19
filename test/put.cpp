@@ -53,7 +53,7 @@ TEST(PutTest, handle_break_invariant){
   Key k({EIGHT, ONE, TWO, CD}, 2);
   GC gc{};
   borderNode->lock();
-  handle_break_invariant(borderNode, k, j, 1, gc);
+  handle_break_invariant(borderNode, k, 1, gc);
 
   ASSERT_EQ(borderNode->getKeyLen(1), BorderNode::key_len_layer);
   ASSERT_EQ(borderNode->getKeySuffixes().get(1), nullptr);

@@ -74,12 +74,12 @@ TEST(BorderNodeTest, insertPoint){
   auto pair = n.insertPoint();
   EXPECT_EQ(pair.first, 2);
   EXPECT_EQ(pair.second, true);
-  put(&n, k, new Value(1), nullptr, 0, gc);
+  put(&n, k, new Value(1), gc);
   Key k1({1,2,3}, 4);
   pair = n.insertPoint();
   EXPECT_EQ(pair.first, 6);
   EXPECT_EQ(pair.second, true);
-  put(&n, k1, new Value(1), nullptr, 0, gc);
+  put(&n, k1, new Value(1), gc);
   Key k2({1}, 3);
   pair = n.insertPoint();
   EXPECT_EQ(pair.first, 7);

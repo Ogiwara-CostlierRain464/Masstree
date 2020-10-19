@@ -19,7 +19,7 @@ public:
 retry:
     auto old_root = root.load(std::memory_order_acquire);
     auto pair = ::masstree::put_at_layer0(old_root, key, value, gc); // ここでもretry
-    if(pair.first == Retry){
+    if(pair.first == RetryFromUpperLayer){
       goto retry;
     }
     auto new_root = pair.second;

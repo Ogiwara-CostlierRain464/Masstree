@@ -99,6 +99,22 @@ public:
   }
 
   [[nodiscard]]
+  BorderNode* lockedUpperNode() const{
+    retry:
+    auto p = reinterpret_cast<Node *>(getUpperLayer());
+    if(p != nullptr){
+      p->lock();
+    }
+    // upper layer changed underneath us
+    if(p != reinterpret_cast<Node *>(getUpperLayer())){
+      assert(p != nullptr);
+      p->unlock();
+      goto retry;
+    }
+    return reinterpret_cast<BorderNode *>(p);
+  }
+
+  [[nodiscard]]
   inline InteriorNode* getParent() const{
     return parent.load(READ_MEMORY_ORDER);
   }

@@ -15,7 +15,7 @@ extern Sleeper put_mark_unstable;
 
 enum PutResult : uint8_t{
   Done,
-  Retry
+  RetryFromUpperLayer
 };
 
 /**
@@ -60,7 +60,7 @@ static BorderNode *start_new_tree(const Key &key, Value *value){
  * @param key
  * @return 違反の原因となる、現在borderNodeに挿入されているkey sliceのインデックス、もしくはnull。
  */
-static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
+static std::optional<size_t> check_break_invariant(BorderNode * const borderNode, const Key &key) {
   assert(borderNode->isLocked());
   auto p = borderNode->getPermutation();
   if (key.hasNext()) {
@@ -85,7 +85,7 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
  * @param value
  * @param old_index
  */
-static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t old_index, GC &gc){
+static void handle_break_invariant(BorderNode *n, Key &key, size_t old_index, GC &gc){
   assert(n->isLocked());
   if(n->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
@@ -106,6 +106,7 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
     Alloc::incBorder();
 #endif
     n1->setIsRoot(true);
+    n1->setUpperLayer(n);
     auto k2_val = n->getLV(old_index).value;
     auto k2_suffix_copy = new BigSuffix(*n->getKeySuffixes().get(old_index));
 #ifndef NDEBUG
@@ -144,6 +145,7 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
     n->getKeySuffixes().unref(old_index);
   }else{
     assert(n->getKeyLen(old_index) == BorderNode::key_len_layer);
+    // 特にやる事はない、次のLayerでinsertを行うだけ。
   }
 }
 
@@ -300,7 +302,7 @@ static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, 
  * @param[out] table
  * @param[out] found
  */
-static void create_slice_table(BorderNode *n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
+static void create_slice_table(BorderNode * const n, std::vector<std::pair<KeySlice, size_t>> &table, std::vector<KeySlice> &found){
   auto p = n->getPermutation();
   assert(p.isFull());
   for(size_t i = 0; i < Node::ORDER - 1; ++i){
@@ -361,7 +363,10 @@ static size_t split_point(KeySlice new_slice, const std::vector<std::pair<KeySli
 static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value *value){
   auto p = n->getPermutation();
   assert(p.isFull());
+  assert(n->isLocked());
   assert(n->getSplitting());
+  assert(n1->isLocked());
+  assert(n1->getSplitting());
 
   // 簡単のため、splitされるnをソートしておく。
   n->sort();
@@ -430,6 +435,9 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
     n->setKeySlice(i, temp_key_slice[i]);
     n->setLV(i, temp_lv[i]);
     n->getKeySuffixes().set(i, temp_suffix[i]);
+    if(temp_key_len[i] == BorderNode::key_len_layer){
+      n->getLV(i).next_layer->setUpperLayer(n);
+    }
   }
   n->setPermutation(Permutation::fromSorted(split));
 
@@ -438,6 +446,9 @@ static void split_keys_among(BorderNode *n, BorderNode *n1, const Key &k, Value 
     n1->setKeySlice(j, temp_key_slice[i]);
     n1->setLV(j, temp_lv[i]);
     n1->getKeySuffixes().set(j, temp_suffix[i]);
+    if(n1->getKeyLen(j) == BorderNode::key_len_layer){
+      n1->getLV(j).next_layer->setUpperLayer(n1);
+    }
   }
   n1->setPermutation(Permutation::fromSorted(Node::ORDER - split));
 
@@ -489,17 +500,26 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
   Alloc::incInterior();
 #endif
   root->lock(); // 通常はlockする必要はないが、setParentの便宜上
+  auto upper = left->lockedUpperNode();
   root->setIsRoot(true);
+  root->setUpperLayer(upper);
   root->setNumKeys(1);
   root->setKeySlice(0, slice);
   root->setChild(0, left);
   root->setChild(1, right);
   // 親をセットしてから、is_rootをfalseにする
   left->setParent(root);
+  left->setUpperLayer(nullptr);
   right->setParent(root);
   left->setIsRoot(false);
   right->setIsRoot(false);
+  if(upper != nullptr){
+    upper->unlock();
+  }
+
   root->unlock();
+
+  assert(left->getUpperLayer() == nullptr);
   return root;
 }
 
@@ -556,9 +576,8 @@ ascend:
   assert(n1->isLocked());
   InteriorNode *p = n->lockedParent();
   if(p != nullptr)
-    assert( p->debug_contain_child(n));
-  // 親が変わっているのに、それに気がつけない！
-  // というより、正しく更新されていない。
+    assert(p->debug_contain_child(n));
+
   if(p == nullptr){
     auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     p = create_root_with_children(n, up, n1);
@@ -570,7 +589,7 @@ ascend:
     size_t n_index = p->findChildIndex(n);
     auto up = pull_up ? pull_up.value() : reinterpret_cast<BorderNode*>(n1)->getKeySlice(0);
     insert_into_parent(p, n1, up ,n_index);
-    // ここはreorderできないことに注意する
+    // NOTE: ここはreorderできるのかもしれない。
     n->unlock();
     n1->unlock();
     p->unlock();
@@ -609,10 +628,10 @@ ascend:
  * @return
  */
 [[maybe_unused]]
-static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, BorderNode *upper_layer, size_t upper_index, GC &gc){
+static std::pair<PutResult,Node*> put(Node *root, Key &k, Value *value, GC &gc){
   if(root == nullptr){
     // Layer0が空の時のみここに来る
-    assert(upper_layer == nullptr);
+    assert(k.cursor == 0);
     return std::make_pair(Done,start_new_tree(k, value));
   }
 retry:
@@ -636,9 +655,8 @@ forward:
       // 探していたKeyを入れるべきBorderNodeが上のLayerに行ってしまった時、あるいはLayer0が消えた時
       // getの時と同じように、putは途中まではただのreaderなのでこのような状況は
       // 発生しうる。
-      // とりあえず最も簡単なのは、treeのrootから処理をやり直すことである。
-      // しかしとても効率が悪いので、一つ上のlayerに戻ってやり直すべきであろう。
-      return std::make_pair(Retry, nullptr);
+      // 一つ上のlayerに戻ってやり直す。
+      return std::make_pair(RetryFromUpperLayer, nullptr);
     }else{
       goto retry;
     }
@@ -662,13 +680,14 @@ forward:
     auto check = check_break_invariant(n, k);
     if(check){
       auto old_index = check.value();
-      handle_break_invariant(n, k, value, old_index, gc);
+      handle_break_invariant(n, k, old_index, gc);
       auto next_layer = n->getLV(old_index).next_layer;
       n->unlock();
       k.next();
-      auto pair = put(next_layer, k, value, n, old_index, gc);
-      if(pair.first == Retry){
-        return std::make_pair(Retry, nullptr);
+      auto pair = put(next_layer, k, value, gc);
+      if(pair.first == RetryFromUpperLayer){
+        k.back();
+        goto retry;
       }
     }else{
       if(p.isNotFull()){
@@ -679,10 +698,9 @@ forward:
         if(may_new_root != nullptr){
           // rootがsplitによって新しくなったので、Layer0以外においては
           // 上のlayerのlv.next_layerを更新する必要がある
-          if(upper_layer != nullptr){
-            upper_layer->setLV(upper_index, LinkOrValue(may_new_root));
-          }
-
+          // 古いupper layerをlockし、(lockedParent)と同じ要領
+          // それから、upper layerのlvを書き換え。
+          // その入れ替え作業はsplitの中で行おう。
           return std::make_pair(Done, may_new_root);
         }
       }
@@ -695,9 +713,10 @@ forward:
   }else if(t == LAYER){
     n->unlock();
     k.next();
-    auto pair = put(lv.next_layer, k, value, n, index, gc);
-    if(pair.first == Retry){
-      return std::make_pair(Retry, nullptr);
+    auto pair = put(lv.next_layer, k, value, gc);
+    if(pair.first == RetryFromUpperLayer){
+      k.back();
+      goto retry;
     }
   }else {
     // t == UNSTABLE
@@ -709,7 +728,7 @@ forward:
 
 [[nodiscard]]
 static std::pair<PutResult, Node*>put_at_layer0(Node *root, Key &k, Value *value, GC &gc){
-  return put(root, k, value, nullptr, 0, gc);
+  return put(root, k, value, gc);
 }
 
 
