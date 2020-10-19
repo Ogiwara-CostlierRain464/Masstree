@@ -29,7 +29,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   assert(p.getNumKeys() == 1);
   assert(n->getIsRoot());
   assert(upper_layer != nullptr);
-  assert(n->getLocked());
+  assert(n->isLocked());
 
   BigSuffix *upper_suffix;
   if(n->getKeyLen(p(0)) == BorderNode::key_len_has_suffix){
@@ -88,7 +88,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
   // ここでupper_layerとupper_indexを保持しているが、splitにより移動する。どう対処するか？
   // parentに親のBorderNodeを入れる？それとも、parentとは別のfieldを追加して、BorderからBorderへのリンクを貼るか？
   // 既存の方法で保存する事はほぼ不可能
-  assert(n->getLocked());
+  assert(n->isLocked());
   auto per = n->getPermutation();
   // すでに要素は削除済み
   assert(per.getNumKeys() == 0);
@@ -223,7 +223,7 @@ retry:
    * ここでキーとなるのが、値の削除が発生してもkeyが左に動かない、という不変性である！
    */
 forward:
-  assert(n->getLocked());
+  assert(n->isLocked());
   if(v.deleted){
     n->unlock();
     if(v.is_root){

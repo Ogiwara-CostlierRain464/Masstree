@@ -61,7 +61,7 @@ static BorderNode *start_new_tree(const Key &key, Value *value){
  * @return 違反の原因となる、現在borderNodeに挿入されているkey sliceのインデックス、もしくはnull。
  */
 static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const Key &key) {
-  assert(borderNode->getLocked());
+  assert(borderNode->isLocked());
   auto p = borderNode->getPermutation();
   if (key.hasNext()) {
     auto cursor = key.getCurrentSlice();
@@ -86,7 +86,7 @@ static std::optional<size_t> check_break_invariant(BorderNode *borderNode, const
  * @param old_index
  */
 static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t old_index, GC &gc){
-  assert(n->getLocked());
+  assert(n->isLocked());
   if(n->getKeyLen(old_index) == BorderNode::key_len_has_suffix){
     /**
     * """
@@ -156,7 +156,7 @@ static void handle_break_invariant(BorderNode *n, Key &key, Value *value, size_t
  * @param value
  */
 static void insert_into_border(BorderNode *border, const Key &key, Value *value, GC &gc){
-  assert(border->getLocked());
+  assert(border->isLocked());
   assert(!border->getSplitting());
   assert(!border->getInserting());
   auto p = border->getPermutation();
@@ -240,9 +240,9 @@ static size_t cut(size_t len){
  */
 static void split_keys_among(InteriorNode *p, InteriorNode *p1, KeySlice slice, Node *n1, size_t n_index, std::optional<KeySlice> &k_prime){
   assert(!p->isNotFull());
-  assert(p->getLocked());
+  assert(p->isLocked());
   assert(p->getSplitting());
-  assert(p1->getLocked());
+  assert(p1->isLocked());
   assert(p1->getSplitting());
 
   uint64_t temp_key_slice[Node::ORDER] = {};
@@ -482,8 +482,8 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
   assert(left->getIsRoot());
   assert(left->getParent() == nullptr);
   assert(right->getParent() == nullptr);
-  assert(left->getLocked());
-  assert(right->getLocked());
+  assert(left->isLocked());
+  assert(right->isLocked());
   auto root = new InteriorNode{};
 #ifndef NDEBUG
   Alloc::incInterior();
@@ -512,9 +512,9 @@ static InteriorNode *create_root_with_children(Node *left, KeySlice slice, Node 
  */
 static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t n_index){
   assert(p->isNotFull());
-  assert(p->getLocked());
+  assert(p->isLocked());
   assert(p->getInserting());
-  assert(n1->getLocked());
+  assert(n1->isLocked());
 
   // move to right
   for(size_t i = p->getNumKeys(); i > n_index; --i){
@@ -539,7 +539,7 @@ static void insert_into_parent(InteriorNode *p, Node *n1, KeySlice slice, size_t
  */
 static Node *split(Node *n, const Key &k, Value *value){
   // precondition: n locked.
-  assert(n->getLocked());
+  assert(n->isLocked());
   Node *n1 = new BorderNode{};
 #ifndef NDEBUG
     Alloc::incBorder();
@@ -552,8 +552,8 @@ static Node *split(Node *n, const Key &k, Value *value){
     reinterpret_cast<BorderNode *>(n1), k, value);
   std::optional<KeySlice> pull_up = std::nullopt;
 ascend:
-  assert(n->getLocked());
-  assert(n1->getLocked());
+  assert(n->isLocked());
+  assert(n1->isLocked());
   InteriorNode *p = n->lockedParent();
   if(p != nullptr)
     assert( p->debug_contain_child(n));
@@ -628,7 +628,7 @@ retry:
    * この時、hand over hand lockingが必要となるであろう。
    */
 forward:
-  assert(n->getLocked());
+  assert(n->isLocked());
   auto p = n->getPermutation();
   if(v.deleted){
     n->unlock();

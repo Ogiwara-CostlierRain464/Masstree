@@ -111,10 +111,26 @@ public:
     // setParentをする時には、その親はlockされていなければならない。
     // 逆に、このNode自身はlockされている必要がない。
     if(p != nullptr){
-      assert(reinterpret_cast<Node*>(p)->getLocked());
+      assert(reinterpret_cast<Node *>(p)->isLocked());
     }
     parent.store(p, WRITE_MEMORY_ORDER);
   }
+
+  [[nodiscard]]
+  inline BorderNode* getUpperLayer() const{
+    return upperLayer.load(READ_MEMORY_ORDER);
+  }
+
+  inline void setUpperLayer(BorderNode* p){
+    // setParentをする時には、その親はlockされていなければならない。
+    // 逆に、このNode自身はlockされている必要はない。
+    if(p != nullptr){
+      assert(reinterpret_cast<Node *>(p)->isLocked());
+    }
+
+  }
+
+
 
   inline void setIsBorder(bool is_border){
     auto v = getVersion();
@@ -146,7 +162,7 @@ public:
   }
 
   [[nodiscard]]
-  inline bool getLocked() const{
+  inline bool isLocked() const{
     auto v = getVersion();
     return v.locked;
   }
@@ -157,7 +173,7 @@ public:
    */
   [[nodiscard]]
   inline bool isUnlocked() const{
-    return !getLocked();
+    return !isLocked();
   }
 
   [[nodiscard]]
@@ -692,7 +708,7 @@ retry_prev_lock:
   void sort(){
     auto p = getPermutation();
     assert(p.isFull());
-    assert(getLocked());
+    assert(isLocked());
     assert(getSplitting());
 
     uint8_t temp_key_len[Node::ORDER - 1] = {};
