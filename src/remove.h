@@ -23,12 +23,12 @@ enum RootChange : uint8_t {
  * @param upper_layer
  * @param upper_index
  */
-static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
+static void handle_delete_layer_in_remove(BorderNode *n, GC &gc){
   auto p = n->getPermutation();
   assert(n->getParent() == nullptr);
   assert(p.getNumKeys() == 1);
   assert(n->getIsRoot());
-  assert(upper_layer != nullptr);
+  assert(n->getUpperLayer() != nullptr);
   assert(n->isLocked());
 
   BigSuffix *upper_suffix;
@@ -47,7 +47,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
   }
 
   // n -> upper_layerの順で
-  upper_layer->lock();
+  auto upper = n->lockedUpperNode();
 
   /**
    * まず、UNSTABLEとマークする
@@ -56,11 +56,12 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
    * そして、HAS_SUFFIXに書き換える
    * 最後に、nの方のlvとKeySuffixをunrefしておく
    */
-  upper_layer->setKeyLen(upper_index, BorderNode::key_len_unstable);
-  assert(upper_layer->getKeySuffixes().get(upper_index) == nullptr);
-  upper_layer->getKeySuffixes().set(upper_index, upper_suffix);
-  upper_layer->setLV(upper_index, n->getLV(p(0)));
-  upper_layer->setKeyLen(upper_index, BorderNode::key_len_has_suffix);
+  auto n_index = upper->findNextLayerIndex(n);
+  upper->setKeyLen(n_index, BorderNode::key_len_unstable);
+  assert(upper->getKeySuffixes().get(n_index) == nullptr);
+  upper->getKeySuffixes().set(n_index, upper_suffix);
+  upper->setLV(n_index, n->getLV(p(0)));
+  upper->setKeyLen(n_index, BorderNode::key_len_has_suffix);
 
     // 元のValueをクリアにしておく。
   n->setLV(p(0), LinkOrValue{});
@@ -71,7 +72,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
 
   // n -> upper_layer の順番でunlockする
   n->unlock();
-  upper_layer->unlock();
+  upper->unlock();
 }
 
 
@@ -84,7 +85,7 @@ static void handle_delete_layer_in_remove(BorderNode *n, BorderNode *upper_layer
  * @param n
  * @return new root
  */
-static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, BorderNode *upper_layer, size_t upper_index, GC &gc){
+static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, GC &gc){
   // ここでupper_layerとupper_indexを保持しているが、splitにより移動する。どう対処するか？
   // parentに親のBorderNodeを入れる？それとも、parentとは別のfieldを追加して、BorderからBorderへのリンクを貼るか？
   // 既存の方法で保存する事はほぼ不可能
@@ -96,7 +97,7 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
   if(n->getIsRoot()){
     // Layer 0以外ではここには到達しない
     assert(n->getParent() == nullptr);
-    assert(upper_layer == nullptr);
+    assert(n->getUpperLayer() == nullptr);
     n->setDeleted(true);
     gc.add(n);
     n->unlock();
@@ -142,11 +143,12 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
     if(p->getIsRoot()){
       assert(p->getParent() == nullptr);
       // rootが変わり、upper_layerからの付け替えが必要になる
-      if(upper_layer == nullptr){
+      if(p->getUpperLayer() == nullptr){
         // Layer0の時
         // is_rootをtrueにしてからparentをnullptrにする
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
+        pull_up_node->setUpperLayer(nullptr);
         // TODO: pを先にunlockしても良いのか検討
         p->setDeleted(true);
         gc.add(p);
@@ -159,11 +161,15 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
       }else{
         // upper layerの更新
         // is_rootをtrueにしてからparentをnullptrにする
+        auto upper = p->lockedUpperNode();
+        auto p_index = upper->findNextLayerIndex(p);
+
         pull_up_node->setIsRoot(true);
         pull_up_node->setParent(nullptr);
-        upper_layer->setLV(upper_index, LinkOrValue(pull_up_node));
+        upper->setLV(p_index, LinkOrValue(pull_up_node));
 
         // TODO: pを先にunlockしても良いのか検討
+        upper->unlock();
         p->setDeleted(true);
         gc.add(p);
         p->unlock();
@@ -204,10 +210,10 @@ static std::pair<RootChange, Node*> delete_border_node_in_remove(BorderNode *n, 
  * @return 新しいroot
  */
 [[maybe_unused]]
-static std::pair<RootChange, Node*> remove(Node *root, Key &k, BorderNode *upper_layer, size_t upper_index, GC &gc){
+static std::pair<RootChange, Node*> remove(Node *root, Key &k, GC &gc){
   if(root == nullptr){
     // Layer0以外では起きえない
-    assert(upper_layer == nullptr);
+    assert(k.cursor == 0);
     return std::make_pair(NotChange, nullptr);
   }
 
@@ -282,10 +288,10 @@ forward:
      * ロックをかける必要がありそうだ
      */
     auto p = n->getPermutation();
-    if(n->getIsRoot() and p.getNumKeys() == 1 and upper_layer != nullptr){
+    if(n->getIsRoot() and p.getNumKeys() == 1 and k.cursor != 0){
       // layer0の時以外で、残りの要素数が1のBorderNodeがRootの時
       // 要素数への変更は生じない
-      handle_delete_layer_in_remove(n, upper_layer, upper_index, gc);
+      handle_delete_layer_in_remove(n, gc);
       return std::make_pair(LayerDeleted, nullptr);
     }
 
@@ -296,7 +302,7 @@ forward:
     auto current_num_keys = p.getNumKeys();
 
     if(current_num_keys == 0){
-      auto pair = delete_border_node_in_remove(n, upper_layer, upper_index, gc);
+      auto pair = delete_border_node_in_remove(n, gc);
       if(pair.first != NotChange){
         return pair;
       }
@@ -306,7 +312,7 @@ forward:
   }else if(t == LAYER){
     n->unlock();
     k.next();
-    auto pair = remove(lv.next_layer, k, n, index, gc);
+    auto pair = remove(lv.next_layer, k, gc);
     if(pair.first == LayerDeleted){
       k.back();
       goto retry;
@@ -321,7 +327,7 @@ forward:
 
 [[nodiscard]]
 static Node *remove_at_layer0(Node *root, Key &k, GC &gc){
-  return remove(root, k, nullptr, 0, gc).second;
+  return remove(root, k, gc).second;
 }
 
 }

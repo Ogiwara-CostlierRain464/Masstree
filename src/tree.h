@@ -770,6 +770,18 @@ retry_prev_lock:
     return (10 <= len and len <= 18);
   }
 
+  size_t findNextLayerIndex(Node *next_layer) const{
+    assert(this->isLocked());
+
+    for(size_t i = 0; i < ORDER - 1; ++i){
+      if(getLV(i).next_layer == next_layer){
+        return i;
+      }
+    }
+
+    assert(false);
+  }
+
   [[nodiscard]]
   inline uint8_t getKeyLen(size_t i) const{
     return key_len[i].load(READ_MEMORY_ORDER);

@@ -24,7 +24,7 @@ TEST(RemoveTest, not_empty_border){
   b->setPermutation(Permutation::fromSorted(3));
 
   Key k({TWO}, 1);
-  auto pair = remove(b, k, nullptr, 0, gc);
+  auto pair = remove(b, k, gc);
   auto p = b->getPermutation();
   EXPECT_TRUE(pair.second == b);
   EXPECT_EQ(b->getKeySlice(p(0)), ONE);
@@ -72,7 +72,7 @@ TEST(RemoveTest, left_most_1){
   b->unlock(); a->unlock();
 
   Key k({14}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(pair.second, a);
   EXPECT_EQ(a->getChild(0), d);
   EXPECT_TRUE(gc.contain(c));
@@ -116,7 +116,7 @@ TEST(RemoveTest, left_most_2){
   b->unlock(); a->unlock();
 
   Key k({12}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 14);
@@ -152,7 +152,7 @@ TEST(RemoveTest, right_most){
   b->unlock(); a->unlock();
 
   Key k({22}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(1) == c);
   EXPECT_TRUE(gc.contain(b));
@@ -199,7 +199,7 @@ TEST(RemoveTest, right_most_2){
   b->unlock(); a->unlock();
 
   Key k({24}, 1);
-  remove(a, k, nullptr, 0, gc);
+  remove(a, k, gc);
   EXPECT_EQ(b->getNumKeys(), 1);
   EXPECT_EQ(b->getKeySlice(0), 22);
   EXPECT_TRUE(gc.contain(e));
@@ -237,7 +237,7 @@ TEST(RemoveTest, middle1){
   b->unlock(); a->unlock();
 
   Key k({15}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_TRUE(pair.second == a);
   EXPECT_TRUE(a->getChild(0) == c);
   EXPECT_TRUE(c->getParent() == a);
@@ -298,7 +298,7 @@ TEST(RemoveTest, middle2){
   b->unlock(); a->unlock();
 
   Key k({22}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(b->getNumKeys(), 3);
   EXPECT_EQ(b->getKeySlice(0), 21);
   EXPECT_EQ(b->getKeySlice(1), 23);
@@ -357,7 +357,7 @@ TEST(RemoveTest, new_root){
   c->unlock(); a->unlock();
 
   Key k({9}, 1);
-  auto pair = remove(a, k, upper_node, upper_index, gc);
+  auto pair = remove(a, k, gc);
   ASSERT_TRUE(upper_node->getLV(upper_index).next_layer == c);
   EXPECT_TRUE(c->getParent() == nullptr);
   EXPECT_TRUE(c->getIsRoot());
@@ -392,7 +392,7 @@ TEST(RemoveTest, remove_layer_1){
   a->unlock();
 
   Key k({9}, 1);
-  auto pair = remove(a, k, upper_b, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(pair.first, NewRoot);
   EXPECT_TRUE(pair.second == c);
   EXPECT_TRUE(gc.contain(a));
@@ -412,7 +412,7 @@ TEST(RemoveTest, remove_layer_2){
   b->setPermutation(Permutation::fromSorted(2));
 
   Key k({9}, 1);
-  auto pair = remove(b, k, upper_b, 0, gc);
+  auto pair = remove(b, k, gc);
   EXPECT_EQ(pair.first, NotChange);
 }
 
@@ -447,7 +447,7 @@ TEST(RemoveTest, remove_all_layer){
     ONE,TWO,THREE,FOUR
   }, 8);
 
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(pair.first, LayerDeleted);
 }
 
@@ -487,7 +487,7 @@ TEST(RemoveTest, remove_all_layer2){
     ONE,TWO,THREE,FOUR
   }, 8);
 
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(pair.first, NotChange);
   auto c_p = c->getPermutation();
   EXPECT_EQ(c->getKeySlice(c_p(0)), FIVE);
@@ -520,7 +520,7 @@ TEST(RemoveTest, at_layer0_1){
   a->unlock();
 
   Key k({9}, 1);
-  auto pair = remove(a, k, nullptr, 0, gc);
+  auto pair = remove(a, k, gc);
   EXPECT_EQ(pair.first, NewRoot);
   EXPECT_TRUE(pair.second->getVersion().is_root);
   EXPECT_TRUE(gc.contain(a));
@@ -539,7 +539,7 @@ TEST(RemoveTest, at_layer0_2){
   b->setPermutation(Permutation::fromSorted(2));
 
   Key k({9}, 1);
-  auto pair = remove(b, k, nullptr, 0, gc);
+  auto pair = remove(b, k, gc);
   EXPECT_EQ(pair.first, NotChange);
 }
 //endregion
@@ -563,7 +563,7 @@ TEST(RemoveTest, handle_delete_layer_in_remove){
   n->setIsRoot(true);
 
   n->lock();
-  handle_delete_layer_in_remove(n, upper, upper_index, gc);
+  handle_delete_layer_in_remove(n, gc);
   ASSERT_TRUE(n->isUnlocked());
   ASSERT_TRUE(upper->isUnlocked());
 
