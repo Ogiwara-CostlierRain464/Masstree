@@ -13,14 +13,15 @@ struct Permutation{
   Permutation &operator=(const Permutation &other) = default;
 
 
+  [[nodiscard]]
   inline uint8_t getNumKeys() const{
     return body & 0b1111LLU;
   }
 
   inline void setNumKeys(size_t num){
     assert(0 <= num and num <= 15);
-    auto rm_num = body >> 4;
-    rm_num = rm_num << 4;
+    auto rm_num = body >> 4LU;
+    rm_num = rm_num << 4LU;
     body = rm_num | num;
   }
 
@@ -34,11 +35,12 @@ struct Permutation{
     setNumKeys(getNumKeys() - 1);
   }
 
+  [[nodiscard]]
   inline uint8_t getKeyIndex(size_t i) const{
     assert(0 <= i and i < getNumKeys());
 
     auto rshift = body >> (15-i)*4;
-    auto result = rshift & 0b1111LL;
+    auto result = rshift & 0b1111LLU;
     assert(0 <= result and result <= 14);
     return result;
   }
@@ -79,11 +81,13 @@ struct Permutation{
     return getKeyIndex(i);
   }
 
+  [[nodiscard]]
   bool isNotFull() const{
     auto num = getNumKeys();
     return num != 15;
   }
 
+  [[nodiscard]]
   bool isFull() const{
     return !isNotFull();
   }
